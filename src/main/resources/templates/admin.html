@@ -47,26 +47,6 @@
             </div>
         </div>
 
-        <!-- Charts Row -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-8">
-                <div class="card-custom">
-                    <div class="card-header-custom">Activity by Hour</div>
-                    <div class="p-3">
-                        <canvas id="activityChart" height="100"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card-custom">
-                    <div class="card-header-custom">Top Domains</div>
-                    <div class="p-3">
-                        <canvas id="domainChart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Recent Activity Table -->
         <div class="card-custom">
             <div class="card-header-custom">Recent Activity Logs</div>
@@ -121,61 +101,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Chart Data Injection -->
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const activityData = /*[[${chartActivityByHour}]]*/[];
-        const domainData = /*[[${chartTopDomains}]]*/[];
-
-        // Process Activity Data (Hour 0-23)
-        const hours = Array.from({ length: 24 }, (_, i) => i);
-        const activityCounts = hours.map(h => {
-            const found = activityData.find(d => d.hour === h);
-            return found ? found.totalDuration : 0;
-        });
-
-        // Activity Chart
-        const ctxActivity = document.getElementById('activityChart').getContext('2d');
-        new Chart(ctxActivity, {
-            type: 'bar',
-            data: {
-                labels: hours.map(h => h + ":00"),
-                datasets: [{
-                    label: 'Seconds Active',
-                    data: activityCounts,
-                    backgroundColor: '#4f46e5',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, x: { grid: { display: false } } }
-            }
-        });
-
-        // Top Domains Chart
-        const domainLabels = domainData.map(d => d.domain);
-        const domainValues = domainData.map(d => d.totalDuration);
-        const ctxDomain = document.getElementById('domainChart').getContext('2d');
-        new Chart(ctxDomain, {
-            type: 'doughnut',
-            data: {
-                labels: domainLabels,
-                datasets: [{
-                    data: domainValues,
-                    backgroundColor: ['#4f46e5', '#818cf8', '#c7d2fe', '#e0e7ff', '#f1f5f9'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
-            }
-        });
-        /*]]>*/
-    </script>
 </body>
 
 </html>

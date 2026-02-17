@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::content}, 'users')}">
+
+<head>
+    <title>Admin Management</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark">Admin Management</h2>
+            <div>
+                <a href="/register" class="btn btn-primary-custom"><i class="bi bi-person-plus"></i> Add New
+                    Admin</a>
+            </div>
+        </div>
+
+        <!-- Success / Error Alerts -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+            <i class="bi bi-check-circle me-1"></i> <span th:text="${success}">Success</span>
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${error}">Error</span>
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${param.registered}" class="alert alert-success alert-dismissible fade show py-2 small"
+            role="alert">
+            <i class="bi bi-check-circle me-1"></i> New admin registered successfully!
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${param.error}">Error</span>
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Admin Table -->
+        <div class="card-custom">
+            <div class="card-header-custom">All Administrators</div>
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="admin : ${admins}">
+                            <td>
+                                <span class="badge-custom badge-neutral" th:text="${admin.id}">#</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 32px; height: 32px; font-size: 0.8rem; font-weight: 600;">
+                                        <span th:text="${admin.username.substring(0, 1).toUpperCase()}">A</span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold" th:text="${admin.username}">admin</div>
+                                        <span th:if="${admin.username == currentUsername}"
+                                            class="badge bg-info bg-opacity-10 text-info"
+                                            style="font-size: 0.65rem;">YOU</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-muted" th:text="${admin.email}">admin@example.com</td>
+                            <td>
+                                <span class="badge-custom badge-success"
+                                    th:text="${admin.role.replace('ROLE_', '')}">ADMIN</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <!-- Edit: only for self -->
+                                    <a th:if="${admin.username == currentUsername}"
+                                        th:href="@{'/admin/users/' + ${admin.id} + '/edit'}"
+                                        class="btn btn-sm btn-outline-primary"
+                                        style="border-radius: 0.5rem; font-size: 0.8rem;">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    <!-- Delete: only for others -->
+                                    <button th:if="${admin.username != currentUsername}" type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        style="border-radius: 0.5rem; font-size: 0.8rem;" data-bs-toggle="modal"
+                                        th:data-bs-target="'#deleteModal-' + ${admin.id}">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${admins.empty}">
+                            <td colspan="5" class="text-center p-4 text-muted">No administrators found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modals -->
+        <div th:each="admin : ${admins}" th:if="${admin.username != currentUsername}">
+            <div class="modal fade" th:id="'deleteModal-' + ${admin.id}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius: 1rem; border: none;">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title fw-bold">Confirm Deletion</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted mb-0">Are you sure you want to delete admin
+                                <strong th:text="${admin.username}">username</strong>?
+                                This action cannot be undone.
+                            </p>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-sm btn-secondary" style="border-radius: 0.5rem;"
+                                data-bs-dismiss="modal">Cancel</button>
+                            <form th:action="@{'/admin/users/' + ${admin.id} + '/delete'}" method="post"
+                                style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" style="border-radius: 0.5rem;">
+                                    <i class="bi bi-trash"></i> Delete Admin
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

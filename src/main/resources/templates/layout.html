@@ -29,20 +29,26 @@
             <a href="/admin/devices" class="nav-item" th:classappend="${activePage == 'devices' ? 'active' : ''}">
                 <i class="bi bi-laptop"></i> Devices
             </a>
-            <a href="#" class="nav-item">
-                <i class="bi bi-gear"></i> Settings
+            <a href="/admin/users" class="nav-item" th:classappend="${activePage == 'users' ? 'active' : ''}">
+                <i class="bi bi-people"></i> Admin Management
             </a>
         </nav>
         <div class="p-3 border-top">
-            <div class="d-flex align-items-center gap-2">
-                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                    style="width: 32px; height: 32px;">
-                    A
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 32px; height: 32px;">
+                        A
+                    </div>
+                    <div>
+                        <div class="small fw-bold">Admin</div>
+                        <div class="small text-muted" style="font-size: 0.7rem;">Administrator</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="small fw-bold">Admin</div>
-                    <div class="small text-muted" style="font-size: 0.7rem;">Administrator</div>
-                </div>
+                <a href="/logout" class="btn btn-sm btn-outline-danger"
+                    style="border-radius: 0.5rem; font-size: 0.7rem;">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>

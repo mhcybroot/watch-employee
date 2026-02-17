@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::content}, 'users')}">
+
+<head>
+    <title>Edit Admin</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="/admin/users" class="text-muted text-decoration-none small">
+                    <i class="bi bi-arrow-left"></i> Back to Admin Management
+                </a>
+                <h2 class="fw-bold text-dark mt-1">Edit Admin</h2>
+            </div>
+        </div>
+
+        <!-- Success / Error Alerts -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+            <i class="bi bi-check-circle me-1"></i> <span th:text="${success}">Success</span>
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${error}">Error</span>
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row g-4">
+            <!-- Profile Section -->
+            <div class="col-md-7">
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <i class="bi bi-person me-2"></i>Profile Information
+                    </div>
+                    <div class="p-4">
+                        <form th:action="@{'/admin/users/' + ${admin.id} + '/edit'}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Username</label>
+                                <input type="text" name="username" class="form-control" th:value="${admin.username}"
+                                    required style="border-radius: 0.75rem; padding: 0.75rem 1rem;">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
+                                <input type="email" name="email" class="form-control" th:value="${admin.email}" required
+                                    style="border-radius: 0.75rem; padding: 0.75rem 1rem;">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Role</label>
+                                <input type="text" class="form-control" th:value="${admin.role}" disabled
+                                    style="border-radius: 0.75rem; padding: 0.75rem 1rem; background: #f8fafc;">
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary-custom"
+                                    style="width: auto; padding: 0.6rem 1.5rem;">
+                                    <i class="bi bi-check-lg"></i> Save Changes
+                                </button>
+                                <a href="/admin/users" class="btn btn-outline-secondary"
+                                    style="border-radius: 0.75rem; padding: 0.6rem 1.5rem;">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password Section -->
+            <div class="col-md-5">
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <i class="bi bi-shield-lock me-2"></i>Change Password
+                    </div>
+                    <div class="p-4">
+                        <form th:action="@{'/admin/users/' + ${admin.id} + '/change-password'}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase">New
+                                    Password</label>
+                                <input type="password" name="newPassword" class="form-control" placeholder="••••••••"
+                                    required minlength="6" style="border-radius: 0.75rem; padding: 0.75rem 1rem;">
+                                <small class="text-muted">Minimum 6 characters</small>
+                            </div>
+                            <button type="submit" class="btn btn-outline-warning w-100"
+                                style="border-radius: 0.75rem; padding: 0.6rem;">
+                                <i class="bi bi-key"></i> Update Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Admin Info Card -->
+                <div class="card-custom mt-4">
+                    <div class="card-header-custom">
+                        <i class="bi bi-info-circle me-2"></i>Admin Details
+                    </div>
+                    <div class="p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
+                                <span th:text="${admin.username.substring(0, 1).toUpperCase()}">A</span>
+                            </div>
+                            <div>
+                                <div class="fw-bold" th:text="${admin.username}">admin</div>
+                                <div class="small text-muted" th:text="${admin.email}">admin@example.com</div>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span>ID</span>
+                                <span class="fw-bold" th:text="${admin.id}">#1</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2">
+                                <span>Role</span>
+                                <span class="badge-custom badge-success"
+                                    th:text="${admin.role.replace('ROLE_', '')}">ADMIN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

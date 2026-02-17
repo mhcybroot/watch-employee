@@ -16,14 +16,21 @@ browser.storage.local.get(["activityLogs", "deviceId"]).then((data) => {
         browser.storage.local.set({ activityLogs: [] });
     }
 
-    // STRICT LOGIC: Use existing ID or generate one PERMANENTLY.
     if (data.deviceId) {
         deviceId = data.deviceId;
+        console.log("Device ID loaded:", deviceId);
     } else {
-        deviceId = crypto.randomUUID();
-        browser.storage.local.set({ deviceId: deviceId });
+        console.log("No Device ID found. Redirecting to setup...");
+        browser.tabs.create({ url: "setup.html" });
     }
-    console.log("Device ID locked:", deviceId);
+});
+
+// Watch for storage changes (to pick up deviceId after setup)
+browser.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.deviceId) {
+        deviceId = changes.deviceId.newValue;
+        console.log("Device ID updated from storage:", deviceId);
+    }
 });
 
 function logActivity(endTime) {

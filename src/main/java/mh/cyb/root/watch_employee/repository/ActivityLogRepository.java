@@ -16,10 +16,10 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
         long countActiveDevicesSince(
                         @org.springframework.data.repository.query.Param("startTime") java.time.LocalDateTime startTime);
 
-        @org.springframework.data.jpa.repository.Query("SELECT new map(Extract(HOUR FROM a.startTime) as hour, SUM(a.durationSeconds) as totalDuration) FROM ActivityLog a GROUP BY Extract(HOUR FROM a.startTime)")
+        @org.springframework.data.jpa.repository.Query("SELECT new map(hour(a.startTime) as hour, SUM(a.durationSeconds) as totalDuration) FROM ActivityLog a GROUP BY hour(a.startTime)")
         java.util.List<java.util.Map<String, Object>> getActivityByHour();
 
-        @org.springframework.data.jpa.repository.Query("SELECT new map(a.domain as domain, SUM(a.durationSeconds) as totalDuration) FROM ActivityLog a GROUP BY a.domain ORDER BY SUM(a.durationSeconds) DESC LIMIT 5")
+        @org.springframework.data.jpa.repository.Query("SELECT new map(a.domain as domain, SUM(a.durationSeconds) as totalDuration) FROM ActivityLog a GROUP BY a.domain ORDER BY SUM(a.durationSeconds) DESC")
         java.util.List<java.util.Map<String, Object>> getTopDomains();
 
         // --- Employee Activity Viewer queries ---

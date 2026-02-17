@@ -42,10 +42,6 @@ public class AdminController {
         model.addAttribute("totalEmployees", totalEmployees);
         model.addAttribute("activeToday", activeToday);
 
-        // 4. Charts Data
-        model.addAttribute("chartActivityByHour", repository.getActivityByHour());
-        model.addAttribute("chartTopDomains", repository.getTopDomains());
-
         return "admin";
     }
 
