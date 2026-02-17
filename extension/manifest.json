@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Productivity Tracker",
+  "version": "1.0",
+  "description": "Tracks active tab usage and sends data to backend.",
+  "permissions": [
+    "tabs",
+    "idle",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:8565/*"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "productivity-tracker@example.com",
+      "strict_min_version": "109.0"
+    }
+  }
+}

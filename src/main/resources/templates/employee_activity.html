@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::content}, 'activity')}">
+
+<head>
+    <title>Employee Activity</title>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/admin" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h2 class="fw-bold text-dark mb-0"
+                        th:text="${employee.name != null ? employee.name : 'Unknown Device'}">Employee</h2>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span class="badge-custom badge-neutral" th:if="${employee.department != null}"
+                            th:text="${employee.department}">Dept</span>
+                        <span class="small text-muted font-monospace" th:text="${employee.deviceId}">UUID</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom d-flex align-items-center gap-2">
+                <i class="bi bi-funnel"></i> Filters
+            </div>
+            <div class="p-3">
+                <form method="get" th:action="@{'/admin/activity/' + ${employee.deviceId}}"
+                    class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold">Start Date</label>
+                        <input type="date" class="form-control" name="startDate" th:value="${filterStartDate}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold">End Date</label>
+                        <input type="date" class="form-control" name="endDate" th:value="${filterEndDate}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold">Domain</label>
+                        <select class="form-select" name="domain">
+                            <option value="">All Domains</option>
+                            <option th:each="d : ${domains}" th:value="${d}" th:text="${d}"
+                                th:selected="${d == filterDomain}">domain.com</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary-custom">
+                            <i class="bi bi-search"></i> Apply
+                        </button>
+                        <a th:href="@{'/admin/activity/' + ${employee.deviceId}}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card-custom stat-card">
+                    <div>
+                        <div class="stat-title">Total Time</div>
+                        <div class="stat-value" th:text="${totalDuration}">0h 0m</div>
+                    </div>
+                    <i class="bi bi-hourglass-split stat-icon"></i>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom stat-card">
+                    <div>
+                        <div class="stat-title">Total Visits</div>
+                        <div class="stat-value" th:text="${logCount}">0</div>
+                    </div>
+                    <i class="bi bi-globe stat-icon"></i>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom stat-card">
+                    <div>
+                        <div class="stat-title">Top Domain</div>
+                        <div class="stat-value" style="font-size: 1.2rem;" th:text="${topDomain}">-</div>
+                    </div>
+                    <i class="bi bi-trophy stat-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Table -->
+        <div class="card-custom">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <span>Activity Logs</span>
+                <span class="badge bg-secondary" th:text="${logCount} + ' records'">0 records</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>URL</th>
+                            <th>Start Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="log : ${logs}">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted"
+                                        style="width: 28px; height: 28px;">
+                                        <i class="bi bi-globe2" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    <span class="fw-bold" th:text="${log.domain}">example.com</span>
+                                </div>
+                            </td>
+                            <td>
+                                <a th:href="${log.url}" target="_blank"
+                                    class="small text-muted text-decoration-none text-truncate d-block"
+                                    style="max-width: 350px;" th:text="${log.url}">http://...</a>
+                            </td>
+                            <td class="text-muted" th:text="${#temporals.format(log.startTime, 'yyyy-MM-dd HH:mm')}">
+                                Date</td>
+                            <td>
+                                <span class="badge-custom badge-neutral"
+                                    th:text="${log.durationSeconds + 's'}">60s</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${logs.empty}">
+                            <td colspan="4" class="text-center p-4 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <div class="mt-2">No activity found for the selected filters.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
