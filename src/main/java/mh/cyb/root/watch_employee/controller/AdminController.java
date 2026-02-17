@@ -120,23 +120,35 @@ public class AdminController {
         model.addAttribute("totalDuration", formatDuration(totalDuration));
         model.addAttribute("logCount", logCount);
 
+        // Domain breakdown (for sidebar)
+        java.util.List<java.util.Map<String, Object>> domainStats = repository
+                .getDomainStatsByDeviceIdFiltered(deviceId, startDateTime, endDateTime);
+        java.util.List<java.util.Map<String, Object>> formattedStats = new java.util.ArrayList<>();
+
+        long maxDuration = 1; // Avoid divide by zero
+        for (java.util.Map<String, Object> stat : domainStats) {
+            long duration = (long) stat.get("totalDuration");
+            if (duration > maxDuration)
+                maxDuration = duration;
+        }
+
+        for (java.util.Map<String, Object> stat : domainStats) {
+            java.util.Map<String, Object> entry = new java.util.HashMap<>(stat);
+            long duration = (long) stat.get("totalDuration");
+            entry.put("formattedDuration", formatDuration(duration));
+            entry.put("percentage", (duration * 100) / maxDuration);
+            formattedStats.add(entry);
+        }
+        model.addAttribute("domainStats", formattedStats);
+
         // Domain list for dropdown
         java.util.List<String> domains = repository.findDistinctDomainsByDeviceId(deviceId);
         model.addAttribute("domains", domains);
 
         // Find top domain
         String topDomain = "-";
-        if (!logs.isEmpty()) {
-            java.util.Map<String, Long> domainMap = logs.stream()
-                    .filter(l -> l.getDomain() != null)
-                    .collect(java.util.stream.Collectors.groupingBy(
-                            ActivityLog::getDomain,
-                            java.util.stream.Collectors
-                                    .summingLong(l -> l.getDurationSeconds() != null ? l.getDurationSeconds() : 0)));
-            topDomain = domainMap.entrySet().stream()
-                    .max(java.util.Map.Entry.comparingByValue())
-                    .map(java.util.Map.Entry::getKey)
-                    .orElse("-");
+        if (!domainStats.isEmpty()) {
+            topDomain = (String) domainStats.get(0).get("domain");
         }
         model.addAttribute("topDomain", topDomain);
 

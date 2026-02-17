@@ -92,53 +92,94 @@
             </div>
         </div>
 
-        <!-- Activity Table -->
-        <div class="card-custom">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <span>Activity Logs</span>
-                <span class="badge bg-secondary" th:text="${logCount} + ' records'">0 records</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>Domain</th>
-                            <th>URL</th>
-                            <th>Start Time</th>
-                            <th>Duration</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="log : ${logs}">
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-muted"
-                                        style="width: 28px; height: 28px;">
-                                        <i class="bi bi-globe2" style="font-size: 0.8rem;"></i>
-                                    </div>
-                                    <span class="fw-bold" th:text="${log.domain}">example.com</span>
+        <!-- Main Layout: Sidebar + Content -->
+        <div class="row g-4">
+            <!-- Left Sidebar: Domain Breakdown -->
+            <div class="col-md-4">
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <i class="bi bi-pie-chart"></i> Time by Domain
+                    </div>
+                    <div class="p-3">
+                        <div class="list-group list-group-flush border-0">
+                            <div th:each="stat : ${domainStats}" class="list-group-item border-0 px-0 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <a th:href="@{'/admin/activity/' + ${employee.deviceId}(startDate=${filterStartDate}, endDate=${filterEndDate}, domain=${stat.domain})}"
+                                        class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2"
+                                        th:classappend="${stat.domain == filterDomain ? 'text-primary' : ''}">
+                                        <i class="bi bi-globe2 small"></i>
+                                        <span th:text="${stat.domain}">domain.com</span>
+                                    </a>
+                                    <span class="small text-muted fw-medium" th:text="${stat.formattedDuration}">0h
+                                        10m</span>
                                 </div>
-                            </td>
-                            <td>
-                                <a th:href="${log.url}" target="_blank"
-                                    class="small text-muted text-decoration-none text-truncate d-block"
-                                    style="max-width: 350px;" th:text="${log.url}">http://...</a>
-                            </td>
-                            <td class="text-muted" th:text="${#temporals.format(log.startTime, 'yyyy-MM-dd HH:mm')}">
-                                Date</td>
-                            <td>
-                                <span class="badge-custom badge-neutral"
-                                    th:text="${log.durationSeconds + 's'}">60s</span>
-                            </td>
-                        </tr>
-                        <tr th:if="${logs.empty}">
-                            <td colspan="4" class="text-center p-4 text-muted">
-                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                <div class="mt-2">No activity found for the selected filters.</div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" role="progressbar"
+                                        th:style="'width: ' + ${stat.percentage} + '%'"
+                                        th:attr="aria-valuenow=${stat.percentage}" aria-valuemin="0"
+                                        aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${domainStats.empty}" class="text-center py-4 text-muted small">
+                            No domain activity recorded.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Content: Activity Table -->
+            <div class="col-md-8">
+                <div class="card-custom">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-list-ul"></i> Activity Logs
+                            <span th:if="${filterDomain != null && !filterDomain.empty}" class="ms-2">
+                                <span
+                                    class="badge bg-primary-subtle text-primary border border-primary-subtle fw-normal">
+                                    Filtering: <span th:text="${filterDomain}">domain.com</span>
+                                </span>
+                            </span>
+                        </div>
+                        <span class="badge bg-secondary" th:text="${logCount} + ' records'">0 records</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>URL / Page</th>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="log : ${logs}">
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <a th:href="${log.url}" target="_blank"
+                                                class="fw-bold text-dark text-decoration-none small text-truncate d-block"
+                                                style="max-width: 400px;" th:text="${log.url}">http://...</a>
+                                            <div class="small text-muted" th:text="${log.domain}">domain.com</div>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted small" th:text="${#temporals.format(log.startTime, 'HH:mm')}">
+                                        12:00</td>
+                                    <td>
+                                        <span class="badge-custom badge-neutral"
+                                            th:text="${log.durationSeconds + 's'}">60s</span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${logs.empty}">
+                                    <td colspan="3" class="text-center p-5 text-muted">
+                                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                        <div class="mt-2">No activity found for the selected filters.</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -60,4 +60,15 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
                         @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
                         @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate,
                         @org.springframework.data.repository.query.Param("domain") String domain);
+
+        @org.springframework.data.jpa.repository.Query("SELECT new map(a.domain as domain, SUM(a.durationSeconds) as totalDuration) "
+                        +
+                        "FROM ActivityLog a WHERE a.deviceId = :deviceId " +
+                        "AND (CAST(:startDate AS LocalDateTime) IS NULL OR a.startTime >= :startDate) " +
+                        "AND (CAST(:endDate AS LocalDateTime) IS NULL OR a.startTime <= :endDate) " +
+                        "GROUP BY a.domain ORDER BY SUM(a.durationSeconds) DESC")
+        java.util.List<java.util.Map<String, Object>> getDomainStatsByDeviceIdFiltered(
+                        @org.springframework.data.repository.query.Param("deviceId") String deviceId,
+                        @org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate,
+                        @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
 }
