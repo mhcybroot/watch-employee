@@ -9,19 +9,20 @@
     <div th:fragment="content">
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center gap-3">
-                <a href="/admin" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left"></i>
+            <div>
+                <h2 class="fw-bold text-dark mb-1">Employee Activity</h2>
+                <p class="text-muted mb-0">
+                    Detailed logs for <span class="fw-bold" th:text="${employee.name}">Employee Name</span>
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/export(deviceId=${employee.deviceId}, startDate=${filterStartDate}, endDate=${filterEndDate})}"
+                    class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> Export Logs (CSV)
                 </a>
-                <div>
-                    <h2 class="fw-bold text-dark mb-0"
-                        th:text="${employee.name != null ? employee.name : 'Unknown Device'}">Employee</h2>
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <span class="badge-custom badge-neutral" th:if="${employee.department != null}"
-                            th:text="${employee.department}">Dept</span>
-                        <span class="small text-muted font-monospace" th:text="${employee.deviceId}">UUID</span>
-                    </div>
-                </div>
+                <a href="/admin/devices" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Devices
+                </a>
             </div>
         </div>
 
@@ -61,66 +62,60 @@
             </div>
         </div>
 
-        <!-- Summary Cards -->
         <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="card-custom stat-card">
-                    <div>
-                        <div class="stat-title">Total Time</div>
-                        <div class="stat-value" th:text="${totalDuration}">0h 0m</div>
-                    </div>
-                    <i class="bi bi-hourglass-split stat-icon"></i>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card-custom stat-card">
-                    <div>
-                        <div class="stat-title">Total Visits</div>
-                        <div class="stat-value" th:text="${logCount}">0</div>
-                    </div>
-                    <i class="bi bi-globe stat-icon"></i>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card-custom stat-card">
-                    <div>
-                        <div class="stat-title">Top Domain</div>
-                        <div class="stat-value" style="font-size: 1.2rem;" th:text="${topDomain}">-</div>
-                    </div>
-                    <i class="bi bi-trophy stat-icon"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Layout: Sidebar + Content -->
-        <div class="row g-4">
-            <!-- Left Sidebar: Domain Breakdown -->
+            <!-- Left Content: Activity Overview -->
             <div class="col-md-4">
                 <div class="card-custom">
-                    <div class="card-header-custom">
-                        <i class="bi bi-pie-chart"></i> Time by Domain
-                    </div>
+                    <div class="card-header-custom border-0 pb-0">Activity Overview</div>
                     <div class="p-3">
-                        <div class="list-group list-group-flush border-0">
-                            <div th:each="stat : ${domainStats}" class="list-group-item border-0 px-0 mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <a th:href="@{'/admin/activity/' + ${employee.deviceId}(startDate=${filterStartDate}, endDate=${filterEndDate}, domain=${stat.domain})}"
-                                        class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-2"
-                                        th:classappend="${stat.domain == filterDomain ? 'text-primary' : ''}">
-                                        <i class="bi bi-globe2 small"></i>
-                                        <span th:text="${stat.domain}">domain.com</span>
-                                    </a>
-                                    <span class="small text-muted fw-medium" th:text="${stat.formattedDuration}">0h
-                                        10m</span>
-                                </div>
-                                <div class="progress" style="height: 6px;">
+                        <!-- Summary Stats -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <label class="small text-muted d-block">Total Time</label>
+                                <span class="h4 fw-bold text-dark" th:text="${totalDuration}">2h 15m</span>
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted d-block">Log Entries</label>
+                                <span class="h4 fw-bold text-dark" th:text="${logCount}">142</span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" style="opacity: 0.1">
+
+                        <!-- Productivity Score -->
+                        <div class="mb-4">
+                            <label class="small text-muted d-block mb-2">Productivity Score</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <h3 class="fw-bold mb-0 text-primary" th:text="${productivityScore + '%'}">85%</h3>
+                                <div class="progress flex-grow-1" style="height: 8px;">
                                     <div class="progress-bar bg-primary" role="progressbar"
-                                        th:style="'width: ' + ${stat.percentage} + '%'"
-                                        th:attr="aria-valuenow=${stat.percentage}" aria-valuemin="0"
+                                        th:style="'width: ' + ${productivityScore} + '%'"
+                                        th:attr="aria-valuenow=${productivityScore}" aria-valuemin="0"
                                         aria-valuemax="100">
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Domain Breakdown -->
+                        <div th:unless="${domainStats.empty}">
+                            <label class="small text-muted d-block mb-2">Top Domains</label>
+                            <ul class="list-group list-group-flush small">
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent"
+                                    th:each="stat : ${domainStats}">
+                                    <div class="d-flex flex-column text-truncate" style="max-width: 65%;">
+                                        <span class="fw-bold text-dark text-truncate"
+                                            th:text="${stat.domain}">domain.com</span>
+                                        <span class="text-muted xs" style="font-size: 0.75em;"
+                                            th:text="${domainCategories.getOrDefault(stat.domain, 'Neutral')}">Neutral</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-dark" th:text="${stat.percentage + '%'}">45%</div>
+                                        <div class="text-muted xs" style="font-size: 0.75em;"
+                                            th:text="${stat.formattedDuration}">2h 30m</div>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
                         <div th:if="${domainStats.empty}" class="text-center py-4 text-muted small">
                             No domain activity recorded.
@@ -142,7 +137,7 @@
                                 </span>
                             </span>
                         </div>
-                        <span class="badge bg-secondary" th:text="${logCount} + ' records'">0 records</span>
+                        <span class="badge bg-secondary" th:text="${totalItems} + ' records'">0 records</span>
                     </div>
                     <div class="table-responsive">
                         <table class="table-custom">
@@ -150,7 +145,7 @@
                                 <tr>
                                     <th>URL / Page</th>
                                     <th>Time</th>
-                                    <th>Duration</th>
+                                    <th class="text-end">Duration</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -163,9 +158,12 @@
                                             <div class="small text-muted" th:text="${log.domain}">domain.com</div>
                                         </div>
                                     </td>
-                                    <td class="text-muted small" th:text="${#temporals.format(log.startTime, 'HH:mm')}">
-                                        12:00</td>
-                                    <td>
+                                    <td class="text-muted small">
+                                        <div th:text="${#temporals.format(log.startTime, 'HH:mm')}">12:00</div>
+                                        <div class="xs opacity-50"
+                                            th:text="${#temporals.format(log.startTime, 'MMM dd')}">Jan 01</div>
+                                    </td>
+                                    <td class="text-end">
                                         <span class="badge-custom badge-neutral"
                                             th:text="${log.durationSeconds + 's'}">60s</span>
                                     </td>
@@ -178,6 +176,29 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Activity Pagination -->
+                    <div class="p-3 border-top d-flex justify-content-between align-items-center"
+                        th:if="${totalPages > 1}">
+                        <div class="small text-muted">
+                            Page <span th:text="${currentPage + 1}">1</span> of <span th:text="${totalPages}">1</span>
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                    <a class="page-link"
+                                        th:href="@{'/admin/activity/' + ${employee.deviceId}(page=${currentPage - 1}, size=${pageSize}, startDate=${filterStartDate}, endDate=${filterEndDate}, domain=${filterDomain})}">
+                                        Previous
+                                    </a>
+                                </li>
+                                <li class="page-item" th:classappend="${currentPage + 1 == totalPages} ? 'disabled'">
+                                    <a class="page-link"
+                                        th:href="@{'/admin/activity/' + ${employee.deviceId}(page=${currentPage + 1}, size=${pageSize}, startDate=${filterStartDate}, endDate=${filterEndDate}, domain=${filterDomain})}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

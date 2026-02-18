@@ -5,40 +5,42 @@ let startTime = Date.now();
 const IDLE_THRESHOLD = 60; // 60 seconds
 const BATCH_INTERVAL = 2 * 60 * 1000; // 2 minutes
 const API_URL = "http://127.0.0.1:8565/api/activity/batch";
-const USER_EMAIL = "user@example.com"; // Hardcoded for demo
 
-// Initialize storage and device ID
+// Initialize state
 let deviceId = null;
+let userEmail = null;
 
 // Initialize once on startup
-browser.storage.local.get(["activityLogs", "deviceId"]).then((data) => {
+browser.storage.local.get(["activityLogs", "deviceId", "userEmail"]).then((data) => {
     if (!data.activityLogs) {
         browser.storage.local.set({ activityLogs: [] });
     }
 
-    if (data.deviceId) {
+    if (data.deviceId && data.userEmail) {
         deviceId = data.deviceId;
-        console.log("Device ID loaded:", deviceId);
+        userEmail = data.userEmail;
+        console.log("Configuration loaded:", { deviceId, userEmail });
     } else {
-        console.log("No Device ID found. Redirecting to setup...");
+        console.log("Configuration incomplete. Redirecting to setup...");
         browser.tabs.create({ url: "setup.html" });
     }
 });
 
-// Watch for storage changes (to pick up deviceId after setup)
+// Watch for storage changes (to pick up config after setup)
 browser.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.deviceId) {
-        deviceId = changes.deviceId.newValue;
-        console.log("Device ID updated from storage:", deviceId);
+    if (area === "local") {
+        if (changes.deviceId) deviceId = changes.deviceId.newValue;
+        if (changes.userEmail) userEmail = changes.userEmail.newValue;
+        console.log("Configuration updated:", { deviceId, userEmail });
     }
 });
 
 function logActivity(endTime) {
-    if (currentUrl && startTime) {
+    if (currentUrl && startTime && deviceId && userEmail) {
         const duration = Math.round((endTime - startTime) / 1000);
         if (duration > 0) {
             const log = {
-                userEmail: USER_EMAIL,
+                userEmail: userEmail,
                 url: currentUrl,
                 startTime: new Date(startTime).toISOString(),
                 endTime: new Date(endTime).toISOString(),
@@ -95,6 +97,8 @@ browser.idle.onStateChanged.addListener((state) => {
     }
 });
 
+const API_KEY = "productivity-secret-key-2024";
+
 // Batch send to backend
 setInterval(async () => {
     const data = await browser.storage.local.get("activityLogs");
@@ -105,7 +109,8 @@ setInterval(async () => {
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-API-KEY": API_KEY
                 },
                 body: JSON.stringify(logsToSend)
             });

@@ -1,6 +1,7 @@
 package mh.cyb.root.watch_employee.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,21 +17,27 @@ public class ActivityLog {
     private Long id;
 
     @Column(nullable = false)
+    @NotBlank(message = "User email is required")
+    @Email(message = "Invalid email format")
     private String userEmail;
 
     @Column(columnDefinition = "TEXT", nullable = false)
+    @NotBlank(message = "URL is required")
     private String url;
 
     private String domain;
 
     @Column(nullable = false)
+    @NotNull(message = "Start time is required")
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
 
+    @Min(value = 0, message = "Duration cannot be negative")
     private Long durationSeconds;
 
     @Column(nullable = false)
+    @NotBlank(message = "Device ID is required")
     private String deviceId;
 
     // Constructors

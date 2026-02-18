@@ -1,11 +1,12 @@
 document.getElementById('submitBtn').addEventListener('click', async () => {
     const code = document.getElementById('enrollmentCode').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
     const statusDiv = document.getElementById('status');
     const submitBtn = document.getElementById('submitBtn');
 
-    if (!code) {
+    if (!code || !email) {
         statusDiv.className = 'error';
-        statusDiv.textContent = 'Please enter a valid code.';
+        statusDiv.textContent = 'Please enter both email and enrollment code.';
         return;
     }
 
@@ -14,7 +15,10 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
     try {
         // Save to browser storage
-        await browser.storage.local.set({ deviceId: code });
+        await browser.storage.local.set({
+            deviceId: code,
+            userEmail: email
+        });
 
         statusDiv.className = 'success';
         statusDiv.textContent = 'Success! Linking browser...';

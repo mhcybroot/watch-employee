@@ -14,6 +14,32 @@ public class Employee {
     private String name;
     private String department;
 
+    @jakarta.persistence.Transient
+    private java.time.LocalDateTime lastSeen;
+
+    public java.time.LocalDateTime getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(java.time.LocalDateTime lastSeen) {
+        this.lastSeen = lastSeen;
+    }
+
+    public String getFormattedLastSeen() {
+        if (lastSeen == null)
+            return "Never";
+        java.time.Duration duration = java.time.Duration.between(lastSeen, java.time.LocalDateTime.now());
+        long mins = duration.toMinutes();
+        if (mins < 1)
+            return "Just now";
+        if (mins < 60)
+            return mins + "m ago";
+        long hours = duration.toHours();
+        if (hours < 24)
+            return hours + "h ago";
+        return duration.toDays() + "d ago";
+    }
+
     public Employee() {
     }
 

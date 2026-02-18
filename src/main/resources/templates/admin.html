@@ -7,12 +7,46 @@
 
 <body>
     <div th:fragment="content">
+        <!-- Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark">Dashboard</h2>
             <div>
+                <a th:href="@{/admin/export(startDate=${filterStartDate}, endDate=${filterEndDate})}"
+                    class="btn btn-outline-success me-2">
+                    <i class="bi bi-download"></i> Export CSV
+                </a>
+                <button id="autoRefreshBtn" class="btn btn-outline-info me-2">
+                    <i class="bi bi-arrow-repeat"></i> Auto-Refresh: OFF
+                </button>
                 <a href="/admin/devices" class="btn btn-primary-custom me-2"><i class="bi bi-laptop"></i> Manage
                     Devices</a>
                 <a href="/admin" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Refresh</a>
+            </div>
+        </div>
+
+        <!-- Dashboard Filters -->
+        <div class="card-custom mb-4">
+            <div class="p-3">
+                <form method="get" th:action="@{/admin}" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold">Start Date</label>
+                        <input type="date" class="form-control" name="startDate" th:value="${filterStartDate}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold">End Date</label>
+                        <input type="date" class="form-control" name="endDate" th:value="${filterEndDate}">
+                    </div>
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary-custom w-100">
+                            <i class="bi bi-filter"></i> Apply Filters
+                        </button>
+                        <a href="/admin" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -47,9 +81,140 @@
             </div>
         </div>
 
+        <!-- Charts Section -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-8">
+                <div class="card-custom" style="height: 100%;">
+                    <div class="card-header-custom border-0">
+                        <i class="bi bi-clock-history"></i> Activity by Hour
+                    </div>
+                    <div class="p-3">
+                        <canvas id="activityHourChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom" style="height: 100%;">
+                    <div class="card-header-custom border-0">
+                        <i class="bi bi-bar-chart-line"></i> Top Domains
+                    </div>
+                    <div class="p-3">
+                        <canvas id="topDomainsChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            document.addEventListener('DOMContentLoaded', function () {
+                // Formatting for charts
+                const hourData = /*[[${activityByHour}]]*/[];
+                const domainData = /*[[${topDomains}]]*/[];
+
+                // Activity by Hour
+                const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+                const hourValues = new Array(24).fill(0);
+                hourData.forEach(d => {
+                    hourValues[d.hour] = (d.totalDuration / 3600).toFixed(2);
+                });
+
+                new Chart(document.getElementById('activityHourChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: hours,
+                        datasets: [{
+                            label: 'Hours Productive',
+                            data: hourValues,
+                            backgroundColor: '#4f46e5',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } }
+                    }
+                });
+
+                // Top Domains
+                const topDomainsCount = 7;
+                const domainLabels = domainData.slice(0, topDomainsCount).map(d => d.domain);
+                const domainValues = domainData.slice(0, topDomainsCount).map(d => (d.totalDuration / 60).toFixed(0));
+
+                new Chart(document.getElementById('topDomainsChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: domainLabels,
+                        datasets: [{
+                            data: domainValues,
+                            backgroundColor: [
+                                '#4f46e5', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff', '#f1f5f9', '#94a3b8'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 10, font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Auto-Refresh Logic
+            const refreshBtn = document.getElementById('autoRefreshBtn');
+            let refreshInterval = null;
+
+            function toggleRefresh(enabled) {
+                if (enabled) {
+                    refreshBtn.classList.replace('btn-outline-info', 'btn-info');
+                    refreshBtn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Auto-Refresh: ON';
+                    refreshInterval = setInterval(() => window.location.reload(), 30000);
+                    sessionStorage.setItem('dashboardAutoRefresh', 'true');
+                } else {
+                    refreshBtn.classList.replace('btn-info', 'btn-outline-info');
+                    refreshBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Auto-Refresh: OFF';
+                    if (refreshInterval) clearInterval(refreshInterval);
+                    sessionStorage.removeItem('dashboardAutoRefresh');
+                }
+            }
+
+            refreshBtn.addEventListener('click', () => {
+                const isEnabled = sessionStorage.getItem('dashboardAutoRefresh') === 'true';
+                toggleRefresh(!isEnabled);
+            });
+
+            // Restore state on load
+            if (sessionStorage.getItem('dashboardAutoRefresh') === 'true') {
+                toggleRefresh(true);
+            }
+            /*]]>*/
+        </script>
+
+        <style>
+            .spin {
+                animation: spin 2s linear infinite;
+            }
+
+            @keyframes spin {
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+
         <!-- Recent Activity Table -->
         <div class="card-custom">
-            <div class="card-header-custom">Recent Activity Logs</div>
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <span>Recent Activity Logs</span>
+                <span class="badge bg-secondary" th:text="${totalItems + ' records'}">0 records</span>
+            </div>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -98,6 +263,25 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Dashboard Pagination -->
+            <div class="p-3 border-top d-flex justify-content-between align-items-center" th:if="${totalPages > 1}">
+                <div class="small text-muted">
+                    Page <span th:text="${currentPage + 1}">1</span> of <span th:text="${totalPages}">1</span>
+                    (<span th:text="${totalItems}">0</span> total logs)
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/admin(page=${currentPage - 1}, size=${pageSize})}">Previous</a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage + 1 == totalPages} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin(page=${currentPage + 1}, size=${pageSize})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

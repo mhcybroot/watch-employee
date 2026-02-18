@@ -11,10 +11,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final mh.cyb.root.watch_employee.repository.DomainCategoryRepository domainCategoryRepository;
 
-    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            mh.cyb.root.watch_employee.repository.DomainCategoryRepository domainCategoryRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.domainCategoryRepository = domainCategoryRepository;
     }
 
     @Override
@@ -27,6 +30,24 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole("ROLE_ADMIN");
             userRepository.save(admin);
             System.out.println("Default admin user created: admin / admin123");
+        }
+
+        if (domainCategoryRepository.count() == 0) {
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("github.com", "Productive"));
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("stackoverflow.com", "Productive"));
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("google.com", "Productive"));
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("youtube.com", "Unproductive"));
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("facebook.com", "Unproductive"));
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("twitter.com", "Unproductive"));
+            domainCategoryRepository
+                    .save(new mh.cyb.root.watch_employee.entity.DomainCategory("linkedin.com", "Neutral"));
+            System.out.println("Default domain categories seeded.");
         }
     }
 }

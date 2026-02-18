@@ -10,6 +10,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/activity")
 public class ActivityController {
+    
+    @org.springframework.beans.factory.annotation.Value("${app.activity.api-key}")
+    private String expectedApiKey;
 
     private final ActivityLogService service;
 
@@ -18,15 +21,24 @@ public class ActivityController {
     }
 
     @PostMapping("/batch")
-    public ResponseEntity<List<ActivityLog>> saveBatch(@RequestBody List<ActivityLog> logs,
+    public ResponseEntity<?> saveBatch(
+            @RequestHeader(value = "X-API-KEY", required = false) String apiKey,
+            @RequestBody List<@jakarta.validation.Valid ActivityLog> logs,
             jakarta.servlet.http.HttpServletRequest request) {
+        
+        if (expectedApiKey != null && !expectedApiKey.equals(apiKey)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).body("Invalid API Key");
+        }
+
         String clientIp = request.getRemoteAddr();
-        logs.forEach(log -> {
+
+        for (ActivityLog log : logs) {
             if (log.getDeviceId() == null || log.getDeviceId().trim().isEmpty()
                     || log.getDeviceId().equals("unknown")) {
                 log.setDeviceId(clientIp);
             }
-        });
+        }
+
         List<ActivityLog> savedLogs = service.saveBatch(logs);
         return ResponseEntity.ok(savedLogs);
     }
