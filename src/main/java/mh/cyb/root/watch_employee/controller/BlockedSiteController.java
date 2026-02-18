@@ -62,7 +62,7 @@ public class BlockedSiteController {
     }
 
     @PostMapping("/admin/blocking")
-    public String addBlock(@RequestParam String domain, @RequestParam(required = false) String deviceId) {
+    public String addBlock(@RequestParam String domain, @RequestParam(required = false) List<String> deviceIds) {
         if (domain != null && !domain.isBlank()) {
             // Normalize domain: remove protocol, www, and path
             String normalizedDomain = domain.trim()
@@ -72,9 +72,19 @@ public class BlockedSiteController {
                     .split("/")[0]; // Remove path if present
 
             if (!normalizedDomain.isBlank()) {
-                String targetDevice = (deviceId != null && !deviceId.isBlank()) ? deviceId : null;
-                BlockedSite site = new BlockedSite(normalizedDomain, targetDevice);
-                blockedSiteRepository.save(site);
+                if (deviceIds == null || deviceIds.isEmpty() || (deviceIds.size() == 1 && deviceIds.get(0).isBlank())) {
+                    // Global Block (no specific devices selected, or explicit empty option)
+                    BlockedSite site = new BlockedSite(normalizedDomain, null);
+                    blockedSiteRepository.save(site);
+                } else {
+                    // Create a rule for each selected device
+                    for (String deviceId : deviceIds) {
+                        if (!deviceId.isBlank()) { // Skip empty values if any mixed in
+                            BlockedSite site = new BlockedSite(normalizedDomain, deviceId);
+                            blockedSiteRepository.save(site);
+                        }
+                    }
+                }
             }
         }
         return "redirect:/admin/blocking";

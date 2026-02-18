@@ -28,15 +28,17 @@
                                 <div class="form-text">Enter the domain name without http/https.</div>
                             </div>
                             <div class="mb-3">
-                                <label for="deviceId" class="form-label small fw-bold text-muted">Target Device
+                                <label for="deviceIds" class="form-label small fw-bold text-muted">Target Devices
                                     (Optional)</label>
-                                <select class="form-select" id="deviceId" name="deviceId">
+                                <select class="form-select" id="deviceIds" name="deviceIds" multiple size="5">
                                     <option value="">All Devices (Global Block)</option>
                                     <option th:each="emp : ${employees}" th:value="${emp.deviceId}"
                                         th:text="${emp.name != null ? emp.name : emp.deviceId}">
                                         Employee Name
                                     </option>
                                 </select>
+                                <div class="form-text">Hold Ctrl/Cmd to select multiple devices. Leave unselected for
+                                    Global.</div>
                             </div>
                             <button type="submit" class="btn btn-primary-custom w-100">
                                 <i class="bi bi-shield-lock-fill"></i> Block Website
