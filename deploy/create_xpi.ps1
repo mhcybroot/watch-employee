@@ -6,18 +6,17 @@ $outputFile = Join-Path $paramBaseDir "watch-employee.xpi"
 
 Write-Host "Packaging extension from $extensionDir to $outputFile..."
 
-if (Test-Path $outputFile) {
-    Remove-Item $outputFile -Force
+$tempZip = Join-Path $paramBaseDir "watch-employee.zip"
+
+if (Test-Path $tempZip) {
+    Remove-Item $tempZip -Force
 }
 
-# Compress-Archive requires the source to be the contents, not the folder itself, to avoid nested folders
-# Getting all items in the extension folder
-$files = Get-ChildItem -Path $extensionDir
+# Compress to .zip first (required by Compress-Archive)
+# We compress the contents of the extension folder, not the folder itself, so it's at the root of the archive
+Compress-Archive -Path "$extensionDir\*" -DestinationPath $tempZip -Force
 
-if ($files.Count -eq 0) {
-    Write-Error "Extension directory is empty!"
-}
-
-Compress-Archive -Path "$extensionDir\*" -DestinationPath $outputFile -Force
+# Rename to .xpi
+Move-Item -Path $tempZip -Destination $outputFile -Force
 
 Write-Host "Success! XPI created at $outputFile"
