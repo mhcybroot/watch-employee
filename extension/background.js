@@ -260,3 +260,50 @@ async function sendBatchData() {
     }
 }
 
+// ==================== Auto-Fill Message Handlers ====================
+
+const CREDENTIAL_API_KEY = "productivity-secret-key-2024";
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'check-autofill') {
+        handleCheckAutofill(message).then(sendResponse);
+        return true; // async response
+    }
+    if (message.type === 'get-password') {
+        handleGetPassword(message).then(sendResponse);
+        return true;
+    }
+});
+
+async function handleCheckAutofill(message) {
+    if (!deviceId) return { credentials: [] };
+    try {
+        const response = await fetch(
+            `${SERVER_URL}/api/credentials?deviceId=${encodeURIComponent(deviceId)}`,
+            { headers: { "X-API-KEY": CREDENTIAL_API_KEY } }
+        );
+        if (!response.ok) return { credentials: [] };
+        const credentials = await response.json();
+        return { credentials };
+    } catch (err) {
+        console.error("[AutoFill] Failed to fetch credentials:", err);
+        return { credentials: [] };
+    }
+}
+
+async function handleGetPassword(message) {
+    if (!deviceId) return { error: "Not configured" };
+    try {
+        const response = await fetch(
+            `${SERVER_URL}/api/credentials/${message.credentialId}/copy?deviceId=${encodeURIComponent(deviceId)}`,
+            { headers: { "X-API-KEY": CREDENTIAL_API_KEY } }
+        );
+        if (response.status === 403) return { error: "Access denied" };
+        if (!response.ok) return { error: "Server error" };
+        const data = await response.json();
+        return { password: data.password };
+    } catch (err) {
+        console.error("[AutoFill] Failed to get password:", err);
+        return { error: "Connection failed" };
+    }
+}

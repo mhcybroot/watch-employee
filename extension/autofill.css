@@ -1,0 +1,148 @@
+/* Auto-fill banner - uses prefixed classes to avoid conflicts */
+.watcher-autofill-banner {
+    position: relative;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+    z-index: 2147483647;
+    animation: watcher-slide-down 0.3s ease;
+    line-height: 1.4;
+}
+
+.watcher-autofill-banner * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+@keyframes watcher-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.watcher-autofill-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.watcher-autofill-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.watcher-autofill-text {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.watcher-autofill-site {
+    font-weight: 700;
+}
+
+.watcher-autofill-user {
+    opacity: 0.85;
+    font-size: 12px;
+}
+
+.watcher-autofill-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.watcher-autofill-fill-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+    line-height: 1.2;
+}
+
+.watcher-autofill-fill-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.watcher-autofill-dismiss-btn {
+    background: none;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.15s;
+    font-family: inherit;
+    line-height: 1;
+}
+
+.watcher-autofill-dismiss-btn:hover {
+    color: white;
+}
+
+/* Dropdown for multiple credentials */
+.watcher-autofill-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.watcher-autofill-select {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    max-width: 180px;
+}
+
+.watcher-autofill-select option {
+    color: #333;
+    background: white;
+}
+
+.watcher-autofill-success {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+}
+
+.watcher-autofill-banner.watcher-fade-out {
+    animation: watcher-fade-out 0.3s ease forwards;
+}
+
+@keyframes watcher-fade-out {
+    to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}

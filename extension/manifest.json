@@ -28,6 +28,21 @@
   "content_security_policy": {
     "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://10.10.10.10:8565/ http://localhost:8565/"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "config.js",
+        "autofill.js"
+      ],
+      "css": [
+        "autofill.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "browser_specific_settings": {
     "gecko": {
       "id": "productivity-tracker@example.com",

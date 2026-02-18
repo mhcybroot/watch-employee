@@ -22,5 +22,20 @@
   "action": {
     "default_popup": "credentials.html",
     "default_title": "My Credentials"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "config.js",
+        "autofill.js"
+      ],
+      "css": [
+        "autofill.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }
