@@ -30,9 +30,22 @@ public class CredentialController {
     // ==================== ADMIN: Credentials ====================
 
     @GetMapping("/admin/credentials")
-    public String credentialsPage(Model model) {
-        model.addAttribute("credentials", credentialService.getAllCredentials());
+    public String credentialsPage(@RequestParam(required = false, defaultValue = "all") String filter,
+            Model model) {
+        List<Credential> credentials;
+        switch (filter) {
+            case "admin":
+                credentials = credentialService.getAdminCredentials();
+                break;
+            case "user":
+                credentials = credentialService.getUserSubmittedCredentials();
+                break;
+            default:
+                credentials = credentialService.getAllCredentials();
+        }
+        model.addAttribute("credentials", credentials);
         model.addAttribute("groups", credentialService.getAllGroups());
+        model.addAttribute("currentFilter", filter);
         return "credentials";
     }
 
@@ -158,6 +171,69 @@ public class CredentialController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Credential not found");
+        }
+    }
+
+    // ==================== API: User-Saved Credentials ====================
+
+    @PostMapping("/api/credentials")
+    @ResponseBody
+    public ResponseEntity<?> saveUserCredential(
+            @RequestHeader(value = "X-API-KEY", required = false) String apiKey,
+            @RequestBody Map<String, String> body) {
+
+        if (expectedApiKey == null || expectedApiKey.isBlank() || !expectedApiKey.equals(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid API Key");
+        }
+
+        String deviceId = body.get("deviceId");
+        String siteName = body.get("siteName");
+        String siteUrl = body.get("siteUrl");
+        String username = body.get("username");
+        String password = body.get("password");
+        String notes = body.get("notes");
+
+        if (deviceId == null || siteName == null || siteUrl == null || username == null || password == null) {
+            return ResponseEntity.badRequest().body("Missing required fields");
+        }
+
+        Credential cred = credentialService.saveUserCredential(deviceId, siteName, siteUrl, username, password, notes);
+        return ResponseEntity.ok(Map.of(
+                "id", cred.getId(),
+                "siteName", cred.getSiteName(),
+                "siteUrl", cred.getSiteUrl(),
+                "username", cred.getUsername()));
+    }
+
+    @GetMapping("/api/credentials/my")
+    @ResponseBody
+    public ResponseEntity<?> getMyCredentials(
+            @RequestHeader(value = "X-API-KEY", required = false) String apiKey,
+            @RequestParam String deviceId) {
+
+        if (expectedApiKey == null || expectedApiKey.isBlank() || !expectedApiKey.equals(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid API Key");
+        }
+
+        return ResponseEntity.ok(credentialService.getMyCredentials(deviceId));
+    }
+
+    @DeleteMapping("/api/credentials/{id}")
+    @ResponseBody
+    public ResponseEntity<?> deleteUserCredential(
+            @RequestHeader(value = "X-API-KEY", required = false) String apiKey,
+            @PathVariable Long id,
+            @RequestParam String deviceId) {
+
+        if (expectedApiKey == null || expectedApiKey.isBlank() || !expectedApiKey.equals(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid API Key");
+        }
+
+        boolean deleted = credentialService.deleteUserCredential(id, deviceId);
+        if (deleted) {
+            return ResponseEntity.ok(Map.of("status", "deleted"));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied or not found");
         }
     }
 }

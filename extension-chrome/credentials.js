@@ -1,6 +1,8 @@
 const API_KEY = "productivity-secret-key-2024";
 let deviceId = null;
 let allCredentials = [];
+let myCredentials = [];
+let activeTab = 'shared';
 
 async function init() {
     try {
@@ -46,10 +48,43 @@ async function init() {
                 }
             });
         }
+
+        // Wire up tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+        });
+
+        // Wire up save button
+        const saveBtn = document.getElementById('saveCredBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', submitCredential);
+        }
     } catch (err) {
         showError("Failed to read configuration: " + err.message);
     }
 }
+
+// ==================== Tab Switching ====================
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+    const sharedSection = document.getElementById('sharedSection');
+    const mySavedSection = document.getElementById('mySavedSection');
+
+    if (tab === 'shared') {
+        sharedSection.classList.remove('section-hidden');
+        mySavedSection.classList.add('section-hidden');
+    } else {
+        sharedSection.classList.add('section-hidden');
+        mySavedSection.classList.remove('section-hidden');
+        loadMyCredentials();
+    }
+}
+
+// ==================== Shared Credentials ====================
 
 async function loadCredentials() {
     try {
@@ -140,6 +175,175 @@ function renderCredentials(credentials) {
     });
 }
 
+// ==================== My Saved Credentials ====================
+
+async function loadMyCredentials() {
+    const myList = document.getElementById('myCredentialsList');
+    const myLoading = document.getElementById('myLoading');
+    myLoading.style.display = 'block';
+    myList.innerHTML = '';
+
+    try {
+        const response = await fetch(
+            `${SERVER_URL}/api/credentials/my?deviceId=${encodeURIComponent(deviceId)}`,
+            { headers: { "X-API-KEY": API_KEY } }
+        );
+
+        myLoading.style.display = 'none';
+
+        if (!response.ok) {
+            myList.innerHTML = '<div class="no-results">Failed to load saved credentials.</div>';
+            return;
+        }
+
+        myCredentials = await response.json();
+
+        if (myCredentials.length === 0) {
+            myList.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">💾</div>
+                    <p><strong>No saved credentials yet</strong></p>
+                    <p style="font-size: 0.85em; margin-top: 5px;">
+                        Use the form above to save a password.
+                    </p>
+                </div>
+            `;
+            return;
+        }
+
+        renderMyCredentials(myCredentials);
+    } catch (err) {
+        myLoading.style.display = 'none';
+        myList.innerHTML = '<div class="no-results">Cannot connect to server.</div>';
+    }
+}
+
+function renderMyCredentials(credentials) {
+    const container = document.getElementById('myCredentialsList');
+    container.innerHTML = credentials.map(cred => `
+        <div class="credential-card">
+            <div class="cred-header">
+                <div>
+                    <div class="site-name">${escapeHtml(cred.siteName)}</div>
+                    <a href="${escapeHtml(cred.siteUrl)}" target="_blank" class="site-url">${escapeHtml(cred.siteUrl)}</a>
+                </div>
+                <button class="delete-btn" data-cred-id="${cred.id}" data-action="delete-my">🗑 Delete</button>
+            </div>
+            <div class="cred-body">
+                <div class="field" style="flex: 2;">
+                    <div class="field-label">Username</div>
+                    <div class="field-value">
+                        <span>${escapeHtml(cred.username)}</span>
+                    </div>
+                </div>
+                <div class="field" style="flex: 1;">
+                    <div class="field-label">Password</div>
+                    <div class="field-value">
+                        <span class="password-dots">••••••••</span>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="copy-btn" data-username="${escapeHtml(cred.username)}" data-action="copy-username">
+                    📋 Copy Username
+                </button>
+                <button class="copy-btn" data-cred-id="${cred.id}" data-action="copy-password">
+                    🔒 Copy Password
+                </button>
+            </div>
+            ${cred.notes ? `<div class="notes-text">📝 ${escapeHtml(cred.notes)}</div>` : ''}
+        </div>
+    `).join('');
+
+    // Attach event listeners
+    container.querySelectorAll('[data-action="copy-username"]').forEach(btn => {
+        btn.addEventListener('click', () => copyUsername(btn, btn.getAttribute('data-username')));
+    });
+    container.querySelectorAll('[data-action="copy-password"]').forEach(btn => {
+        btn.addEventListener('click', () => copyPassword(btn, parseInt(btn.getAttribute('data-cred-id'))));
+    });
+    container.querySelectorAll('[data-action="delete-my"]').forEach(btn => {
+        btn.addEventListener('click', () => deleteMyCredential(btn, parseInt(btn.getAttribute('data-cred-id'))));
+    });
+}
+
+async function submitCredential() {
+    const siteName = document.getElementById('saveSiteName').value.trim();
+    const siteUrl = document.getElementById('saveSiteUrl').value.trim();
+    const username = document.getElementById('saveUsername').value.trim();
+    const password = document.getElementById('savePassword').value;
+    const notes = document.getElementById('saveNotes').value.trim();
+
+    if (!siteName || !siteUrl || !username || !password) {
+        showToast("⚠️ Please fill in all required fields.");
+        return;
+    }
+
+    const btn = document.getElementById('saveCredBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving...';
+
+    try {
+        const response = await fetch(`${SERVER_URL}/api/credentials`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': API_KEY
+            },
+            body: JSON.stringify({ deviceId, siteName, siteUrl, username, password, notes })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(errText || `Server error: ${response.status}`);
+        }
+
+        // Clear form
+        document.getElementById('saveSiteName').value = '';
+        document.getElementById('saveSiteUrl').value = '';
+        document.getElementById('saveUsername').value = '';
+        document.getElementById('savePassword').value = '';
+        document.getElementById('saveNotes').value = '';
+
+        showToast("✅ Credential saved successfully!");
+        await loadMyCredentials();
+    } catch (err) {
+        showToast("❌ Failed to save: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Save Credential';
+    }
+}
+
+async function deleteMyCredential(btn, credentialId) {
+    if (!confirm('Delete this credential?')) return;
+
+    btn.disabled = true;
+    btn.textContent = '⏳...';
+
+    try {
+        const response = await fetch(
+            `${SERVER_URL}/api/credentials/${credentialId}?deviceId=${encodeURIComponent(deviceId)}`,
+            { method: 'DELETE', headers: { 'X-API-KEY': API_KEY } }
+        );
+
+        if (response.ok) {
+            showToast("🗑 Credential deleted.");
+            await loadMyCredentials();
+        } else {
+            showToast("⚠️ Cannot delete: access denied.");
+            btn.disabled = false;
+            btn.textContent = '🗑 Delete';
+        }
+    } catch (err) {
+        showToast("❌ Delete failed: " + err.message);
+        btn.disabled = false;
+        btn.textContent = '🗑 Delete';
+    }
+}
+
+// ==================== Copy Helpers ====================
+
 async function copyUsername(btn, username) {
     try {
         await navigator.clipboard.writeText(username);
@@ -200,6 +404,8 @@ function showCopied(btn, text) {
     }, 2000);
 }
 
+// ==================== Utility ====================
+
 function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -220,4 +426,3 @@ function escapeHtml(str) {
 }
 
 init();
-

@@ -186,10 +186,60 @@ public class CredentialService {
      * Get decrypted password only if device has access.
      */
     public String copyPassword(Long credentialId, String deviceId) {
-        boolean hasAccess = mappingRepo.hasDeviceAccessToCredential(credentialId, deviceId);
-        if (!hasAccess) {
+        // Check group-based access OR own submitted credential
+        boolean hasGroupAccess = mappingRepo.hasDeviceAccessToCredential(credentialId, deviceId);
+        boolean isOwnCredential = credentialRepo.findById(credentialId)
+                .map(c -> deviceId.equals(c.getSubmittedByDeviceId()))
+                .orElse(false);
+
+        if (!hasGroupAccess && !isOwnCredential) {
             throw new SecurityException("Device " + deviceId + " does not have access to credential " + credentialId);
         }
         return decryptPassword(credentialId);
+    }
+
+    // ========== User-Submitted Credentials ==========
+
+    public Credential saveUserCredential(String deviceId, String siteName, String siteUrl,
+            String username, String plainPassword, String notes) {
+        String encrypted = encryptionService.encrypt(plainPassword);
+        Credential cred = new Credential(siteName, siteUrl, username, encrypted, notes);
+        cred.setSubmittedByDeviceId(deviceId);
+        return credentialRepo.save(cred);
+    }
+
+    public List<Map<String, Object>> getMyCredentials(String deviceId) {
+        List<Credential> credentials = credentialRepo.findBySubmittedByDeviceId(deviceId);
+        return credentials.stream().map(c -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", c.getId());
+            map.put("siteName", c.getSiteName());
+            map.put("siteUrl", c.getSiteUrl());
+            map.put("username", c.getUsername());
+            map.put("notes", c.getNotes());
+            map.put("createdAt", c.getCreatedAt().toString());
+            return map;
+        }).collect(Collectors.toList());
+    }
+
+    public List<Credential> getUserSubmittedCredentials() {
+        return credentialRepo.findBySubmittedByDeviceIdIsNotNull();
+    }
+
+    public List<Credential> getAdminCredentials() {
+        return credentialRepo.findBySubmittedByDeviceIdIsNull();
+    }
+
+    @Transactional
+    public boolean deleteUserCredential(Long id, String deviceId) {
+        Optional<Credential> opt = credentialRepo.findById(id);
+        if (opt.isEmpty())
+            return false;
+        Credential cred = opt.get();
+        if (!deviceId.equals(cred.getSubmittedByDeviceId()))
+            return false;
+        mappingRepo.deleteByCredentialId(id);
+        credentialRepo.deleteById(id);
+        return true;
     }
 }

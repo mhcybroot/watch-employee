@@ -26,6 +26,9 @@ public class Credential {
     @Column(length = 500)
     private String notes;
 
+    @Column(nullable = true)
+    private String submittedByDeviceId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -96,5 +99,13 @@ public class Credential {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getSubmittedByDeviceId() {
+        return submittedByDeviceId;
+    }
+
+    public void setSubmittedByDeviceId(String submittedByDeviceId) {
+        this.submittedByDeviceId = submittedByDeviceId;
     }
 }
