@@ -49,6 +49,13 @@ browser.storage.onChanged.addListener((changes, area) => {
     }
 });
 
+// Helper: Format date as local ISO string (YYYY-MM-DDTHH:mm:ss) instead of UTC
+function toLocalISOString(date) {
+    const d = new Date(date);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 // Helper: Check if URL should be tracked (only http/https)
 function isTrackableUrl(url) {
     return url && (url.startsWith('http://') || url.startsWith('https://'));
@@ -64,8 +71,8 @@ async function flushCurrentJournal() {
             const log = {
                 userEmail: userEmail,
                 url: currentUrl,
-                startTime: new Date(startTime).toISOString(),
-                endTime: new Date(now).toISOString(),
+                startTime: toLocalISOString(startTime),
+                endTime: toLocalISOString(now),
                 durationSeconds: duration,
                 deviceId: deviceId
             };

@@ -8,7 +8,8 @@
     "idle",
     "storage",
     "declarativeNetRequest",
-    "alarms"
+    "alarms",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "http://localhost:8565/*",
@@ -20,8 +21,12 @@
       "background.js"
     ]
   },
+  "action": {
+    "default_popup": "credentials.html",
+    "default_title": "My Credentials"
+  },
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; connect-src 'self' http://10.10.10.10:8565/ http://localhost:8565/"
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://10.10.10.10:8565/ http://localhost:8565/"
   },
   "browser_specific_settings": {
     "gecko": {

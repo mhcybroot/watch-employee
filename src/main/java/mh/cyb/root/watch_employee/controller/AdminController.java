@@ -297,7 +297,7 @@ public class AdminController {
             java.util.Map<String, Object> entry = new java.util.HashMap<>(stat);
             long duration = (long) stat.get("totalDuration");
             entry.put("formattedDuration", formatDuration(duration));
-            entry.put("percentage", (duration * 100) / maxDuration);
+            entry.put("percentage", totalSecondsByStats > 0 ? (duration * 100) / totalSecondsByStats : 0);
             formattedStats.add(entry);
         }
 

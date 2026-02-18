@@ -8,7 +8,8 @@
     "idle",
     "storage",
     "declarativeNetRequest",
-    "alarms"
+    "alarms",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "http://localhost:8565/*",
@@ -17,5 +18,9 @@
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "credentials.html",
+    "default_title": "My Credentials"
   }
 }
