@@ -1,5 +1,6 @@
 const API_KEY = "productivity-secret-key-2024";
 let deviceId = null;
+let allCredentials = [];
 
 async function init() {
     try {
@@ -22,6 +23,29 @@ async function init() {
 
         document.getElementById('deviceIdBadge').textContent = deviceId;
         await loadCredentials();
+
+        // Wire up search
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (!query) {
+                    renderCredentials(allCredentials);
+                    return;
+                }
+                const filtered = allCredentials.filter(c =>
+                    (c.siteName && c.siteName.toLowerCase().includes(query)) ||
+                    (c.siteUrl && c.siteUrl.toLowerCase().includes(query)) ||
+                    (c.username && c.username.toLowerCase().includes(query)) ||
+                    (c.notes && c.notes.toLowerCase().includes(query))
+                );
+                renderCredentials(filtered);
+                if (filtered.length === 0) {
+                    document.getElementById('credentialsList').innerHTML =
+                        '<div class="no-results">No credentials match your search.</div>';
+                }
+            });
+        }
     } catch (err) {
         showError("Failed to read configuration: " + err.message);
     }
@@ -45,6 +69,7 @@ async function loadCredentials() {
         }
 
         const credentials = await response.json();
+        allCredentials = credentials;
 
         if (credentials.length === 0) {
             document.getElementById('credentialsList').innerHTML = `
@@ -61,6 +86,7 @@ async function loadCredentials() {
 
         document.getElementById('statusBar').style.display = 'flex';
         document.getElementById('statusText').textContent = `${credentials.length} credential${credentials.length > 1 ? 's' : ''} available`;
+        document.getElementById('searchContainer').style.display = 'block';
 
         renderCredentials(credentials);
     } catch (err) {
@@ -105,7 +131,7 @@ function renderCredentials(credentials) {
         </div>
     `).join('');
 
-    // Attach event listeners (no inline onclick needed)
+    // Attach event listeners
     container.querySelectorAll('[data-action="copy-username"]').forEach(btn => {
         btn.addEventListener('click', () => copyUsername(btn, btn.getAttribute('data-username')));
     });
@@ -194,3 +220,4 @@ function escapeHtml(str) {
 }
 
 init();
+
