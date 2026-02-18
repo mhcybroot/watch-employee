@@ -40,7 +40,11 @@
             <a href="/admin/users" class="nav-item" th:classappend="${activePage == 'users' ? 'active' : ''}">
                 <i class="bi bi-people"></i> Admin Management
             </a>
+            <a href="/admin/blocking" class="nav-item" th:classappend="${activePage == 'blocking' ? 'active' : ''}">
+                <i class="bi bi-shield-lock"></i> Blocking
+            </a>
         </nav>
+
 
         <div class="sidebar-footer p-3 border-top">
             <div class="d-flex align-items-center mb-3">

@@ -6,7 +6,8 @@
   "permissions": [
     "tabs",
     "idle",
-    "storage"
+    "storage",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "http://localhost:8565/*"

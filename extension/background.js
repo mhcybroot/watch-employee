@@ -99,6 +99,53 @@ browser.idle.onStateChanged.addListener((state) => {
 
 const API_KEY = "productivity-secret-key-2024";
 
+const BLOCKING_API_URL = "http://127.0.0.1:8565/api/blocked-sites";
+
+async function updateBlockingRules() {
+    if (!deviceId) return;
+
+    try {
+        const response = await fetch(`${BLOCKING_API_URL}?deviceId=${deviceId}`);
+        if (response.ok) {
+            const blockedDomains = await response.json();
+
+            // Convert domains to DNR rules
+            const newRules = blockedDomains.map((domain, index) => ({
+                id: index + 1,
+                priority: 1,
+                action: { type: "block" },
+                condition: {
+                    urlFilter: `||${domain}`,
+                    resourceTypes: ["main_frame"]
+                }
+            }));
+
+            // Get existing rules to remove them first
+            const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+            const oldRuleIds = oldRules.map(rule => rule.id);
+
+            // Update rules
+            await chrome.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: oldRuleIds,
+                addRules: newRules
+            });
+
+            console.log(`Updated blocking rules: ${blockedDomains.length} domains blocked.`);
+        }
+    } catch (error) {
+        console.error("Failed to update blocking rules:", error);
+    }
+}
+
+// Update rules periodically and on startup
+setInterval(updateBlockingRules, BATCH_INTERVAL);
+// Also update when deviceId is loaded
+browser.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.deviceId) {
+        updateBlockingRules();
+    }
+});
+
 // Batch send to backend
 setInterval(async () => {
     const data = await browser.storage.local.get("activityLogs");
@@ -117,12 +164,11 @@ setInterval(async () => {
 
             if (response.ok) {
                 console.log(`Successfully sent ${logsToSend.length} logs.`);
+                await updateBlockingRules(); // Also update rules after sending logs
 
                 // Safely remove sent logs
                 const currentData = await browser.storage.local.get("activityLogs");
                 const currentLogs = currentData.activityLogs || [];
-                // Remove the number of logs we sent from the beginning of the array
-                // any new logs added during fetch will be at the end
                 const remainingLogs = currentLogs.slice(logsToSend.length);
 
                 await browser.storage.local.set({ activityLogs: remainingLogs });
@@ -134,3 +180,4 @@ setInterval(async () => {
         }
     }
 }, BATCH_INTERVAL);
+
