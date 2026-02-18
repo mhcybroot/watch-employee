@@ -26,6 +26,7 @@ public class BlockedSiteController {
 
     @GetMapping("/api/blocked-sites")
     @ResponseBody
+    @CrossOrigin(origins = "*")
     public List<String> getBlockedDomains(@RequestParam(required = false) String deviceId) {
         if (deviceId == null || deviceId.isBlank()) {
             // If no device ID, return only global blocks (or maybe all? let's return
@@ -63,9 +64,18 @@ public class BlockedSiteController {
     @PostMapping("/admin/blocking")
     public String addBlock(@RequestParam String domain, @RequestParam(required = false) String deviceId) {
         if (domain != null && !domain.isBlank()) {
-            String targetDevice = (deviceId != null && !deviceId.isBlank()) ? deviceId : null;
-            BlockedSite site = new BlockedSite(domain.trim(), targetDevice);
-            blockedSiteRepository.save(site);
+            // Normalize domain: remove protocol, www, and path
+            String normalizedDomain = domain.trim()
+                    .toLowerCase()
+                    .replaceAll("^https?://", "")
+                    .replaceAll("^www\\.", "")
+                    .split("/")[0]; // Remove path if present
+
+            if (!normalizedDomain.isBlank()) {
+                String targetDevice = (deviceId != null && !deviceId.isBlank()) ? deviceId : null;
+                BlockedSite site = new BlockedSite(normalizedDomain, targetDevice);
+                blockedSiteRepository.save(site);
+            }
         }
         return "redirect:/admin/blocking";
     }

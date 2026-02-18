@@ -10,7 +10,8 @@
     "declarativeNetRequest"
   ],
   "host_permissions": [
-    "http://localhost:8565/*"
+    "http://localhost:8565/*",
+    "http://127.0.0.1:8565/*"
   ],
   "background": {
     "scripts": [

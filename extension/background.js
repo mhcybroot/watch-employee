@@ -100,6 +100,7 @@ browser.idle.onStateChanged.addListener((state) => {
 const API_KEY = "productivity-secret-key-2024";
 
 const BLOCKING_API_URL = "http://127.0.0.1:8565/api/blocked-sites";
+let globalBlockedDomains = []; // Cache for fallback check
 
 async function updateBlockingRules() {
     if (!deviceId) return;
@@ -108,17 +109,25 @@ async function updateBlockingRules() {
         const response = await fetch(`${BLOCKING_API_URL}?deviceId=${deviceId}`);
         if (response.ok) {
             const blockedDomains = await response.json();
+            globalBlockedDomains = blockedDomains; // Update cache
 
-            // Convert domains to DNR rules
-            const newRules = blockedDomains.map((domain, index) => ({
-                id: index + 1,
-                priority: 1,
-                action: { type: "block" },
-                condition: {
-                    urlFilter: `||${domain}`,
-                    resourceTypes: ["main_frame"]
-                }
-            }));
+            // Convert domains to Regex DNR rules
+            // Regex: ^https?://([a-z0-9-]+\.)*domain\.com(/.*)?$
+            const newRules = blockedDomains.map((domain, index) => {
+                // Escape dots for regex
+                const escapedDomain = domain.replace(/\./g, '\\.');
+                const regex = `^https?://([a-z0-9-]+\\.)*${escapedDomain}(/.*)?$`;
+
+                return {
+                    id: index + 1,
+                    priority: 1,
+                    action: { type: "block" },
+                    condition: {
+                        regexFilter: regex,
+                        resourceTypes: ["main_frame", "xmlhttprequest"]
+                    }
+                };
+            });
 
             // Get existing rules to remove them first
             const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
@@ -136,6 +145,26 @@ async function updateBlockingRules() {
         console.error("Failed to update blocking rules:", error);
     }
 }
+
+// Fallback: Check navigations client-side (SPA support)
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.url && globalBlockedDomains.length > 0) {
+        try {
+            const url = new URL(changeInfo.url);
+            // Check if hostname ends with any blocked domain
+            const match = globalBlockedDomains.some(domain =>
+                url.hostname === domain || url.hostname.endsWith("." + domain)
+            );
+
+            if (match) {
+                console.log("Fallback blocking: " + url.hostname);
+                browser.tabs.update(tabId, { url: "blocked.html" }); // Create this file or redirect to generic page
+            }
+        } catch (e) {
+            // Invalid URL, ignore
+        }
+    }
+});
 
 // Update rules periodically and on startup
 setInterval(updateBlockingRules, BATCH_INTERVAL);
