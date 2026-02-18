@@ -27,10 +27,18 @@ Copy-Item -Path $xpiSource -Destination $xpiDest -Force
 
 # 3. Configure Registry Policy
 Write-Host "Applying Registry Policy..."
-$regPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox\ExtensionSettings"
+# 3. Configure Registry Policy
+Write-Host "Applying Registry Policy..."
+$firefoxPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox"
+$extensionSettingsKey = Join-Path $firefoxPath "ExtensionSettings"
 
-if (-not (Test-Path $regPath)) {
-    New-Item -Path $regPath -Force | Out-Null
+if (-not (Test-Path $firefoxPath)) {
+    New-Item -Path $firefoxPath -Force | Out-Null
+}
+
+# cleanup conflicting key if it exists (from previous run)
+if (Test-Path $extensionSettingsKey) {
+    Remove-Item -Path $extensionSettingsKey -Recurse -Force
 }
 
 # JSON Configuration for ExtensionSettings
@@ -45,11 +53,11 @@ $jsonPolicy = @"
 "@
 
 # Disable Developer Tools (Optional, but recommended for security)
-$policyPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox"
-Set-ItemProperty -Path $policyPath -Name "DisableDeveloperTools" -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $firefoxPath -Name "DisableDeveloperTools" -Value 1 -Type DWord -Force
 
-# Set the ExtensionSettings JSON
-Set-ItemProperty -Path $regPath -Name $extensionId -Value $jsonPolicy -Type String -Force
+# Set the ExtensionSettings JSON string value under the Firefox key
+# Note: ExtensionSettings CAN be a subkey if using GPO templates, but raw registry usually expects flattened JSON string
+Set-ItemProperty -Path $firefoxPath -Name "ExtensionSettings" -Value $jsonPolicy -Type String -Force
 
 Write-Host "Policy applied successfully!"
 Write-Host "Please restart Firefox to see the changes."

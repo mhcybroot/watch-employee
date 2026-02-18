@@ -23,20 +23,15 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
     // Verify connection first
     try {
-        // Use blocked-sites as a lightweight health check (returns empty list if valid)
-        // Adjust logic if you have a dedicated health endpoint
-        // Assuming SERVER_URL is defined elsewhere or needs to be defined.
-        // For this example, let's assume it's a global constant.
-        // SERVER_URL is defined in config.js
+        // SERVER_URL is defined in config.jsor globally
         const response = await fetch(`${SERVER_URL}/api/blocked-sites?deviceId=setup_check`);
         if (!response.ok) {
             throw new Error(`Server returned ${response.status}`);
         }
     } catch (error) {
         statusDiv.className = 'error';
-        statusDiv.textContent = `Cannot connect to server at ${SERVER_URL}. Error: ${error.message}. Please check if the server is running and the URL is correct.`;
+        statusDiv.textContent = "Cannot connect to server at " + SERVER_URL + "\n\nError: " + error.message + "\n\nPlease check if the server is running and the URL is correct.";
         submitBtn.disabled = false;
-        console.error('Server connection error:', error);
         return;
     }
 
@@ -44,13 +39,13 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
     try {
         // Save to browser storage
-        await browser.storage.local.set({
+        await chrome.storage.local.set({
             deviceId: code,
             userEmail: email
         });
 
         statusDiv.className = 'success';
-        statusDiv.textContent = 'Success! Linking browser...';
+        statusDiv.textContent = 'Success! Linking chrome...';
 
         // Brief delay for visual feedback, then close
         setTimeout(() => {

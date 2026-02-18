@@ -1,4 +1,6 @@
 // State variables
+importScripts('config.js');
+
 let currentTabId = null;
 let currentUrl = null;
 let startTime = Date.now();
@@ -12,9 +14,9 @@ let deviceId = null;
 let userEmail = null;
 
 // Initialize once on startup
-browser.storage.local.get(["activityLogs", "deviceId", "userEmail"]).then(async (data) => {
+chrome.storage.local.get(["activityLogs", "deviceId", "userEmail"]).then(async (data) => {
     if (!data.activityLogs) {
-        browser.storage.local.set({ activityLogs: [] });
+        chrome.storage.local.set({ activityLogs: [] });
     }
 
     if (data.deviceId && data.userEmail) {
@@ -27,21 +29,21 @@ browser.storage.local.get(["activityLogs", "deviceId", "userEmail"]).then(async 
             const response = await fetch(`${SERVER_URL}/api/blocked-sites?deviceId=${deviceId}`);
             if (!response.ok) {
                 console.warn("Server Check Failed (Status Code):", response.status);
-                browser.tabs.create({ url: "error.html" });
+                chrome.tabs.create({ url: "error.html" });
             }
         } catch (error) {
             console.warn("Server Check Failed (Network):", error);
-            browser.tabs.create({ url: "error.html" });
+            chrome.tabs.create({ url: "error.html" });
         }
 
     } else {
         console.log("Configuration incomplete. Redirecting to setup...");
-        browser.tabs.create({ url: "setup.html" });
+        chrome.tabs.create({ url: "setup.html" });
     }
 });
 
 // Watch for storage changes (to pick up config after setup)
-browser.storage.onChanged.addListener((changes, area) => {
+chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local") {
         if (changes.deviceId) deviceId = changes.deviceId.newValue;
         if (changes.userEmail) userEmail = changes.userEmail.newValue;
@@ -71,10 +73,10 @@ async function flushCurrentJournal() {
             };
 
             try {
-                const data = await browser.storage.local.get("activityLogs");
+                const data = await chrome.storage.local.get("activityLogs");
                 const logs = data.activityLogs || [];
                 logs.push(log);
-                await browser.storage.local.set({ activityLogs: logs });
+                await chrome.storage.local.set({ activityLogs: logs });
                 console.log("Checkpointed log:", { url: currentUrl, duration });
             } catch (e) {
                 console.error("Failed to save log:", e);
@@ -95,28 +97,28 @@ async function updateState(tabId, url) {
 }
 
 // Listen for tab activation
-browser.tabs.onActivated.addListener(async (activeInfo) => {
-    const tab = await browser.tabs.get(activeInfo.tabId);
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
     if (tab.url) {
         updateState(activeInfo.tabId, tab.url);
     }
 });
 
 // Listen for URL changes
-browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tabId === currentTabId && changeInfo.url) {
         updateState(tabId, changeInfo.url);
     }
 });
 
 // Listen for idle state
-browser.idle.setDetectionInterval(IDLE_THRESHOLD);
-browser.idle.onStateChanged.addListener(async (state) => {
+chrome.idle.setDetectionInterval(IDLE_THRESHOLD);
+chrome.idle.onStateChanged.addListener(async (state) => {
     if (state === "idle" || state === "locked") {
         await flushCurrentJournal();
         currentUrl = null; // Stop tracking
     } else if (state === "active") {
-        browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+        chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
             if (tabs.length > 0) {
                 updateState(tabs[0].id, tabs[0].url);
             }
@@ -157,11 +159,11 @@ async function updateBlockingRules() {
             });
 
             // Get existing rules to remove them first
-            const oldRules = await browser.declarativeNetRequest.getDynamicRules();
+            const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
             const oldRuleIds = oldRules.map(rule => rule.id);
 
             // Update rules
-            await browser.declarativeNetRequest.updateDynamicRules({
+            await chrome.declarativeNetRequest.updateDynamicRules({
                 removeRuleIds: oldRuleIds,
                 addRules: newRules
             });
@@ -174,7 +176,7 @@ async function updateBlockingRules() {
 }
 
 // Fallback: Check navigations client-side (SPA support)
-browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.url && globalBlockedDomains.length > 0) {
         try {
             const url = new URL(changeInfo.url);
@@ -191,7 +193,7 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
             if (match) {
                 console.log("Fallback blocking: " + url.hostname);
-                browser.tabs.update(tabId, { url: "blocked.html" }); // Create this file or redirect to generic page
+                chrome.tabs.update(tabId, { url: "blocked.html" }); // Create this file or redirect to generic page
             }
         } catch (e) {
             // Invalid URL, ignore
@@ -199,11 +201,11 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
-// Use Alarms for Event Page capability (setInterval is unreliable in MV3)
-browser.alarms.create("batchUpload", { periodInMinutes: 1 });
-browser.alarms.create("updateRules", { periodInMinutes: 1 });
+// Use Alarms for Service Worker capability (setInterval is unreliable)
+chrome.alarms.create("batchUpload", { periodInMinutes: 1 });
+chrome.alarms.create("updateRules", { periodInMinutes: 1 });
 
-browser.alarms.onAlarm.addListener(async (alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
     console.log(`[DEBUG] Alarm fired: ${alarm.name}`);
     if (alarm.name === "batchUpload") {
         await sendBatchData();
@@ -216,7 +218,7 @@ async function sendBatchData() {
     console.log("[DEBUG] sendBatchData started");
     await flushCurrentJournal(); // Ensure active session is saved before sending
 
-    const data = await browser.storage.local.get("activityLogs");
+    const data = await chrome.storage.local.get("activityLogs");
     const logsToSend = data.activityLogs || [];
     console.log(`[DEBUG] Logs to send: ${logsToSend.length}`);
 
@@ -236,10 +238,10 @@ async function sendBatchData() {
 
             if (response.ok) {
                 console.log(`Successfully sent ${logsToSend.length} logs.`);
-                await updateBlockingRules(); // Also update rules after sending logs
+                await updateBlockingRules();
 
                 // Safely remove only the logs we successfully sent
-                await browser.storage.local.set({ activityLogs: [] });
+                await chrome.storage.local.set({ activityLogs: [] });
             } else {
                 console.error("Server error, keeping logs in storage.");
                 const text = await response.text();

@@ -14,7 +14,7 @@ public class Employee {
     private String name;
     private String department;
 
-    @jakarta.persistence.Transient
+    @jakarta.persistence.Column(name = "last_seen")
     private java.time.LocalDateTime lastSeen;
 
     public java.time.LocalDateTime getLastSeen() {
@@ -38,6 +38,18 @@ public class Employee {
         if (hours < 24)
             return hours + "h ago";
         return duration.toDays() + "d ago";
+    }
+
+    public String getStatus() {
+        if (lastSeen == null) {
+            return "Offline";
+        }
+        long minutesAgo = java.time.Duration.between(lastSeen, java.time.LocalDateTime.now()).toMinutes();
+        if (minutesAgo <= 10) {
+            return "Active";
+        } else {
+            return "Inactive";
+        }
     }
 
     public Employee() {

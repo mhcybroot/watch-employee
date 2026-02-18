@@ -26,7 +26,6 @@ public class BlockedSiteController {
 
     @GetMapping("/api/blocked-sites")
     @ResponseBody
-    @CrossOrigin(origins = "*")
     public List<String> getBlockedDomains(@RequestParam(required = false) String deviceId) {
         if (deviceId == null || deviceId.isBlank()) {
             // If no device ID, return only global blocks (or maybe all? let's return
@@ -52,8 +51,12 @@ public class BlockedSiteController {
         Map<String, String> employeeMap = employeeRepository.findAll().stream()
                 .collect(Collectors.toMap(
                         mh.cyb.root.watch_employee.entity.Employee::getDeviceId,
-                        e -> e.getName() + " (" + e.getDepartment() + ")",
-                        (a, b) -> a // Merge function in case of duplicates (unlikely for IDs)
+                        e -> {
+                            String name = e.getName() != null ? e.getName() : "Unknown";
+                            String dept = e.getDepartment() != null ? e.getDepartment() : "N/A";
+                            return name + " (" + dept + ")";
+                        },
+                        (a, b) -> a // Merge function in case of duplicates
                 ));
         model.addAttribute("employeeMap", employeeMap);
         model.addAttribute("employees", employeeRepository.findAll()); // For dropdown

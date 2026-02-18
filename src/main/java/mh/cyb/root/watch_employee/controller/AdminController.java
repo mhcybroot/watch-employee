@@ -81,10 +81,12 @@ public class AdminController {
         model.addAttribute("totalItems", logPage.getTotalElements());
         model.addAttribute("pageSize", size);
 
-        // 2. Employee Map
+        // 2. Employee Map (null-safe: auto-created employees may have null names)
         java.util.Map<String, String> employeeMap = employeeRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.toMap(mh.cyb.root.watch_employee.entity.Employee::getDeviceId,
-                        mh.cyb.root.watch_employee.entity.Employee::getName));
+                .collect(java.util.stream.Collectors.toMap(
+                        mh.cyb.root.watch_employee.entity.Employee::getDeviceId,
+                        e -> e.getName() != null ? e.getName() : "Unknown",
+                        (a, b) -> a));
         model.addAttribute("employeeMap", employeeMap);
 
         // 3. Summary Metrics (respecting filters)
@@ -127,18 +129,22 @@ public class AdminController {
         // Get existing employees
         List<mh.cyb.root.watch_employee.entity.Employee> employees = employeeRepository.findAll();
 
-        // Create a merged list/DTO for the view
-        List<mh.cyb.root.watch_employee.entity.Employee> viewList = new java.util.ArrayList<>();
+        // Create a merged list: start with all employees, then add log-only devices
+        java.util.Map<String, mh.cyb.root.watch_employee.entity.Employee> viewMap = new java.util.LinkedHashMap<>();
 
-        for (String id : deviceIds) {
-            mh.cyb.root.watch_employee.entity.Employee emp = employees.stream()
-                    .filter(e -> e.getDeviceId().equals(id))
-                    .findFirst()
-                    .orElse(new mh.cyb.root.watch_employee.entity.Employee(id, null, null));
-            viewList.add(emp);
+        // Add all registered employees first
+        for (mh.cyb.root.watch_employee.entity.Employee emp : employees) {
+            viewMap.put(emp.getDeviceId(), emp);
         }
 
-        model.addAttribute("devices", viewList);
+        // Add devices from logs that aren't registered yet
+        for (String id : deviceIds) {
+            if (!viewMap.containsKey(id)) {
+                viewMap.put(id, new mh.cyb.root.watch_employee.entity.Employee(id, null, null));
+            }
+        }
+
+        model.addAttribute("devices", new java.util.ArrayList<>(viewMap.values()));
         return "devices";
     }
 
@@ -322,9 +328,8 @@ public class AdminController {
         return "employee_activity";
     }
 
-    // Debug endpoint to manually seed categories (for immediate testing without
-    // restart)
-    @GetMapping("/api/debug/seed")
+    // Debug endpoint to manually seed categories (admin-protected)
+    @GetMapping("/admin/debug/seed")
     @ResponseBody
     public String seedCategories() {
         if (domainCategoryRepository.count() == 0) {

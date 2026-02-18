@@ -21,6 +21,7 @@
                             <th>Device ID</th>
                             <th>Employee Name</th>
                             <th>Department</th>
+                            <th>Status</th>
                             <th>Last Seen</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -34,6 +35,12 @@
                                 <span th:if="${device.department != null}" class="badge-custom badge-neutral"
                                     th:text="${device.department}">Eng</span>
                                 <span th:if="${device.department == null}" class="text-muted">-</span>
+                            </td>
+                            <td>
+                                <span th:if="${device.status == 'Active'}" class="badge bg-success">Active</span>
+                                <span th:if="${device.status == 'Inactive'}"
+                                    class="badge bg-warning text-dark">Inactive</span>
+                                <span th:if="${device.status == 'Offline'}" class="badge bg-secondary">Offline</span>
                             </td>
                             <td>
                                 <span class="small text-muted" th:text="${device.formattedLastSeen}">Never</span>
@@ -51,7 +58,7 @@
                             </td>
                         </tr>
                         <tr th:if="${devices.empty}">
-                            <td colspan="5" class="text-center p-4 text-muted">No devices found.</td>
+                            <td colspan="6" class="text-center p-4 text-muted">No devices found.</td>
                         </tr>
                     </tbody>
                 </table>
