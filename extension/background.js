@@ -273,6 +273,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         handleGetPassword(message).then(sendResponse);
         return true;
     }
+    if (message.type === 'save-credential') {
+        handleSaveCredential(message).then(sendResponse);
+        return true;
+    }
 });
 
 async function handleCheckAutofill(message) {
@@ -305,5 +309,31 @@ async function handleGetPassword(message) {
     } catch (err) {
         console.error("[AutoFill] Failed to get password:", err);
         return { error: "Connection failed" };
+    }
+}
+
+async function handleSaveCredential(message) {
+    if (!deviceId) return { success: false, error: "Not configured" };
+    try {
+        const response = await fetch(`${SERVER_URL}/api/credentials`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': CREDENTIAL_API_KEY
+            },
+            body: JSON.stringify({
+                deviceId: deviceId,
+                siteName: message.siteName,
+                siteUrl: message.siteUrl,
+                username: message.username,
+                password: message.password,
+                notes: 'Auto-saved from browser'
+            })
+        });
+        if (!response.ok) return { success: false, error: "Server error" };
+        return { success: true };
+    } catch (err) {
+        console.error("[AutoSave] Failed to save credential:", err);
+        return { success: false, error: "Connection failed" };
     }
 }

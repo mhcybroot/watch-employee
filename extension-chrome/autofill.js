@@ -9,6 +9,11 @@
     let currentBanner = null;
     let matchedCredentials = [];
     let selectedIndex = 0;
+    let wasAutoFilled = false;       // Track if we just auto-filled
+    let dismissedSaveUrls = new Set(); // Don't re-prompt same URL in this session
+
+    const runtime = typeof browser !== 'undefined' ? browser.runtime : chrome.runtime;
+    const storage = typeof browser !== 'undefined' ? browser.storage : chrome.storage;
 
     // ========== Form Detection ==========
 
@@ -20,7 +25,6 @@
         const form = passwordField.closest('form');
         const scope = form || document;
 
-        // Priority order for username field detection
         const selectors = [
             'input[autocomplete="username"]',
             'input[autocomplete="email"]',
@@ -63,7 +67,7 @@
         }
     }
 
-    // ========== Banner UI ==========
+    // ========== Banner UI (Auto-Fill) ==========
 
     function removeBanner() {
         if (currentBanner && currentBanner.parentNode) {
@@ -86,7 +90,6 @@
         banner.className = 'watcher-autofill-banner';
 
         if (credentials.length === 1) {
-            // Single credential
             const cred = credentials[0];
             banner.innerHTML = `
                 <div class="watcher-autofill-info">
@@ -102,7 +105,6 @@
                 </div>
             `;
         } else {
-            // Multiple credentials — show dropdown
             const options = credentials.map((c, i) =>
                 `<option value="${i}">${escapeHtml(c.siteName)} — ${escapeHtml(c.username)}</option>`
             ).join('');
@@ -120,7 +122,6 @@
             `;
         }
 
-        // Event listeners
         banner.addEventListener('click', (e) => {
             const action = e.target.getAttribute('data-action');
             if (action === 'fill') {
@@ -136,7 +137,6 @@
             }
         });
 
-        // Insert banner before the form or password field
         const form = passwordField.closest('form');
         const target = form || passwordField;
         if (target.parentNode) {
@@ -170,8 +170,6 @@
         }
 
         try {
-            // Request password from background
-            const runtime = typeof browser !== 'undefined' ? browser.runtime : chrome.runtime;
             const response = await runtime.sendMessage({
                 type: 'get-password',
                 credentialId: cred.id
@@ -184,15 +182,13 @@
             }
 
             if (response && response.password) {
-                // Fill username
                 const usernameField = findUsernameField(passwordField);
                 if (usernameField) {
                     setNativeValue(usernameField, cred.username);
                 }
-
-                // Fill password
                 setNativeValue(passwordField, response.password);
 
+                wasAutoFilled = true; // Mark so we skip save prompt
                 showSuccess();
             }
         } catch (err) {
@@ -201,7 +197,6 @@
         }
     }
 
-    // Set value using native input setter to trigger React/Angular/Vue change detection
     function setNativeValue(element, value) {
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
             window.HTMLInputElement.prototype, 'value'
@@ -211,24 +206,21 @@
         element.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
-    // ========== Main Scan ==========
+    // ========== Auto-Fill Scan ==========
 
     async function scanForForms() {
         const passwordFields = findPasswordFields();
         if (passwordFields.length === 0) return;
 
-        // Already showing a banner
         if (currentBanner) return;
 
         try {
-            const runtime = typeof browser !== 'undefined' ? browser.runtime : chrome.runtime;
             const response = await runtime.sendMessage({
                 type: 'check-autofill',
                 url: window.location.href
             });
 
             if (response && response.credentials && response.credentials.length > 0) {
-                // Filter credentials that match current page URL
                 const matching = response.credentials.filter(c =>
                     urlMatches(c.siteUrl, window.location.href)
                 );
@@ -238,8 +230,225 @@
                 }
             }
         } catch (err) {
-            // Extension context may be invalid — silently ignore
             console.debug('[WatcherAutoFill] Scan skipped:', err.message);
+        }
+    }
+
+    // ========== Auto-Save on Form Submit ==========
+
+    function setupFormSubmitListeners() {
+        // Listen for all form submissions
+        document.addEventListener('submit', handleFormSubmit, true);
+
+        // Also listen for click on submit buttons (for AJAX forms)
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[type="submit"], input[type="submit"]');
+            if (btn) {
+                const form = btn.closest('form');
+                if (form) {
+                    const pwField = form.querySelector('input[type="password"]');
+                    if (pwField && pwField.value) {
+                        captureAndPromptSave(form);
+                    }
+                }
+            }
+        }, true);
+    }
+
+    function handleFormSubmit(e) {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+
+        const pwField = form.querySelector('input[type="password"]');
+        if (!pwField || !pwField.value) return;
+
+        // Skip if we just auto-filled this form
+        if (wasAutoFilled) {
+            wasAutoFilled = false;
+            return;
+        }
+
+        const url = window.location.href;
+        if (dismissedSaveUrls.has(url)) return;
+
+        const usernameField = findUsernameField(pwField);
+        const username = usernameField ? usernameField.value.trim() : '';
+        const password = pwField.value;
+
+        if (!username || !password) return;
+
+        const hostname = window.location.hostname;
+        const siteName = document.title || hostname;
+
+        // Store pending credential for after navigation
+        const pendingCred = {
+            siteName: siteName,
+            siteUrl: window.location.origin,
+            username: username,
+            password: password,
+            capturedAt: Date.now()
+        };
+
+        // Try to save to extension storage for post-navigation prompt
+        try {
+            storage.local.set({ pendingCredential: pendingCred });
+        } catch (err) {
+            console.debug('[WatcherAutoSave] Storage error:', err);
+        }
+
+        // For AJAX forms (no navigation), show the save banner immediately
+        // We use a small delay to check if the page navigated
+        setTimeout(() => {
+            // If we're still on the same page, show inline save prompt
+            if (window.location.href === url) {
+                showSaveBanner(pendingCred);
+            }
+        }, 1500);
+    }
+
+    function captureAndPromptSave(form) {
+        const pwField = form.querySelector('input[type="password"]');
+        if (!pwField || !pwField.value) return;
+
+        if (wasAutoFilled) {
+            wasAutoFilled = false;
+            return;
+        }
+
+        const url = window.location.href;
+        if (dismissedSaveUrls.has(url)) return;
+
+        const usernameField = findUsernameField(pwField);
+        const username = usernameField ? usernameField.value.trim() : '';
+        const password = pwField.value;
+        if (!username || !password) return;
+
+        const pendingCred = {
+            siteName: document.title || window.location.hostname,
+            siteUrl: window.location.origin,
+            username: username,
+            password: password,
+            capturedAt: Date.now()
+        };
+
+        try {
+            storage.local.set({ pendingCredential: pendingCred });
+        } catch (err) { /* ignore */ }
+    }
+
+    // ========== Save Banner UI ==========
+
+    function showSaveBanner(cred) {
+        removeBanner();
+
+        const banner = document.createElement('div');
+        banner.className = 'watcher-autofill-banner watcher-save-banner';
+        banner.innerHTML = `
+            <div class="watcher-autofill-info">
+                <span class="watcher-autofill-icon">💾</span>
+                <div>
+                    <div class="watcher-autofill-site">Save password?</div>
+                    <div class="watcher-autofill-user">${escapeHtml(cred.username)} on ${escapeHtml(cred.siteName)}</div>
+                </div>
+            </div>
+            <div class="watcher-autofill-actions">
+                <button class="watcher-autofill-fill-btn watcher-save-btn" data-action="save">💾 Save</button>
+                <button class="watcher-autofill-dismiss-btn" data-action="dismiss-save">✕</button>
+            </div>
+        `;
+
+        banner.addEventListener('click', async (e) => {
+            const action = e.target.getAttribute('data-action');
+            if (action === 'save') {
+                await doSaveCredential(cred, e.target);
+            } else if (action === 'dismiss-save') {
+                dismissedSaveUrls.add(window.location.href);
+                clearPendingCredential();
+                removeBanner();
+            }
+        });
+
+        // Insert at top of body
+        document.body.insertBefore(banner, document.body.firstChild);
+        currentBanner = banner;
+
+        // Auto-dismiss after 15 seconds
+        setTimeout(() => {
+            if (currentBanner === banner) {
+                removeBanner();
+            }
+        }, 15000);
+    }
+
+    async function doSaveCredential(cred, btn) {
+        if (btn) {
+            btn.textContent = '⏳ Saving...';
+            btn.disabled = true;
+        }
+
+        try {
+            const response = await runtime.sendMessage({
+                type: 'save-credential',
+                siteName: cred.siteName,
+                siteUrl: cred.siteUrl,
+                username: cred.username,
+                password: cred.password
+            });
+
+            clearPendingCredential();
+
+            if (response && response.success) {
+                if (currentBanner) {
+                    currentBanner.classList.remove('watcher-save-banner');
+                    currentBanner.classList.add('watcher-autofill-success');
+                    const info = currentBanner.querySelector('.watcher-autofill-info');
+                    const actions = currentBanner.querySelector('.watcher-autofill-actions');
+                    if (info) info.innerHTML = '<span class="watcher-autofill-icon">✅</span><div class="watcher-autofill-site">Credential saved!</div>';
+                    if (actions) actions.innerHTML = '';
+                    setTimeout(removeBanner, 2000);
+                }
+            } else {
+                if (btn) {
+                    btn.textContent = '❌ Failed';
+                    setTimeout(() => { btn.textContent = '💾 Save'; btn.disabled = false; }, 2000);
+                }
+            }
+        } catch (err) {
+            console.error('[WatcherAutoSave] Save error:', err);
+            if (btn) { btn.textContent = '💾 Save'; btn.disabled = false; }
+        }
+    }
+
+    function clearPendingCredential() {
+        try {
+            storage.local.remove('pendingCredential');
+        } catch (err) { /* ignore */ }
+    }
+
+    // ========== Check for Pending Credential (after navigation) ==========
+
+    async function checkPendingCredential() {
+        try {
+            const data = await new Promise((resolve) => {
+                if (typeof browser !== 'undefined') {
+                    browser.storage.local.get(['pendingCredential']).then(resolve);
+                } else {
+                    chrome.storage.local.get(['pendingCredential'], resolve);
+                }
+            });
+
+            if (data.pendingCredential) {
+                const cred = data.pendingCredential;
+                // Only show if captured within last 30 seconds
+                if (Date.now() - cred.capturedAt < 30000) {
+                    // Small delay to let the page render
+                    setTimeout(() => showSaveBanner(cred), 800);
+                } else {
+                    clearPendingCredential();
+                }
+            }
+        } catch (err) {
+            console.debug('[WatcherAutoSave] Pending check error:', err);
         }
     }
 
@@ -254,8 +463,14 @@
 
     // ========== Initialization ==========
 
-    // Initial scan after page load
+    // Auto-fill scan
     setTimeout(scanForForms, 1000);
+
+    // Form submit listeners for auto-save
+    setupFormSubmitListeners();
+
+    // Check for pending credential from previous page
+    checkPendingCredential();
 
     // Re-scan on DOM mutations (for SPAs)
     const observer = new MutationObserver(() => {
