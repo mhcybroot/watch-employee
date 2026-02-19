@@ -6,7 +6,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     Break   
 }
 
-$extensionId = "productivity-tracker@example.com"
+$extensionId = "it@skylink-ltd.com"
 $regPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox\ExtensionSettings"
 $policyPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox"
 $installDir = "C:\ProgramData\WatchEmployee"

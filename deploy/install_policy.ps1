@@ -2,15 +2,15 @@ $ErrorActionPreference = "Stop"
 
 # Check for Administrator privileges
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {  
-  Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script as an Administrator!"   
-  Break   
+    Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script as an Administrator!"   
+    Break   
 }
 
 $paramBaseDir = $PSScriptRoot
 $xpiSource = Join-Path $paramBaseDir "watch-employee.xpi"
 $installDir = "C:\ProgramData\WatchEmployee"
 $xpiDest = Join-Path $installDir "extension.xpi"
-$extensionId = "productivity-tracker@example.com"
+$extensionId = "it@skylink-ltd.com"
 
 # 1. Prepare Installation Directory
 Write-Host "Creating installation directory: $installDir"
