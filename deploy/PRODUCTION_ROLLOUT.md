@@ -27,11 +27,10 @@ Run:
 The GUI will auto-elevate, run preflight checks, and provide one-click Firefox + Chrome policy actions with timestamped logs in `deploy\logs`.
 
 Chrome GUI workflow:
-1. Enter `Chrome Extension ID` (32 lowercase letters).
-2. Enter `Chrome Update URL` (`https://...`).
-3. Click `Save Chrome Settings`.
-4. Click `Install Chrome Policy`.
-5. Verify in `chrome://policy`, then restart Chrome.
+1. Default shared Chrome settings are auto-loaded from `deploy/release.config.json`.
+2. Click `Install Chrome Policy` directly for normal workstation installs.
+3. Only if values must change: click `Edit Chrome Settings`, update fields, then `Save Chrome Settings`.
+4. Verify in `chrome://policy`, then restart Chrome.
 
 ## 2) Validation Gate
 Run:

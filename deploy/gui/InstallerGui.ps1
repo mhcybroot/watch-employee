@@ -144,12 +144,19 @@ $xaml = @"
                 <StackPanel>
                     <TextBlock Text="Status" FontWeight="Bold" FontSize="16"/>
                     <TextBlock x:Name="TxtStatus" Margin="0,8,0,10" Foreground="#374151" TextWrapping="Wrap"/>
-                    <TextBlock Text="Chrome Settings" FontWeight="Bold" Margin="0,10,0,8"/>
+                    <TextBlock Text="Chrome Settings (Global for all PCs)" FontWeight="Bold" Margin="0,10,0,8"/>
                     <TextBlock Text="Extension ID" FontSize="12" Foreground="#374151"/>
-                    <TextBox x:Name="TxtChromeExtensionId" Margin="0,4,0,8" Padding="8"/>
+                    <TextBox x:Name="TxtChromeExtensionId" Margin="0,4,0,8" Padding="8" IsReadOnly="True"/>
                     <TextBlock Text="Update URL" FontSize="12" Foreground="#374151"/>
-                    <TextBox x:Name="TxtChromeUpdateUrl" Margin="0,4,0,8" Padding="8"/>
-                    <Button x:Name="BtnSaveChromeSettings" Margin="0,0,0,8" Padding="10" Content="Save Chrome Settings"/>
+                    <TextBox x:Name="TxtChromeUpdateUrl" Margin="0,4,0,8" Padding="8" IsReadOnly="True"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnEditChromeSettings" Grid.Column="0" Margin="0,0,6,0" Padding="10" Content="Edit Chrome Settings"/>
+                        <Button x:Name="BtnSaveChromeSettings" Grid.Column="1" Margin="6,0,0,0" Padding="10" Content="Save Chrome Settings"/>
+                    </Grid>
                     <TextBlock x:Name="TxtChromeValidation" Margin="0,0,0,8" Foreground="#6b7280" TextWrapping="Wrap"/>
                     <Button x:Name="BtnInstallChrome" Margin="0,0,0,8" Padding="10" Background="#059669" Foreground="White" Content="Install Chrome Policy"/>
                     <Button x:Name="BtnRemoveChrome" Padding="10" Background="#b45309" Foreground="White" Content="Remove Chrome Policy"/>
@@ -209,6 +216,7 @@ $btnOpenLogs = $window.FindName("BtnOpenLogs")
 $btnInstallChrome = $window.FindName("BtnInstallChrome")
 $btnRemoveChrome = $window.FindName("BtnRemoveChrome")
 $btnSaveChromeSettings = $window.FindName("BtnSaveChromeSettings")
+$btnEditChromeSettings = $window.FindName("BtnEditChromeSettings")
 $txtChromeExtensionId = $window.FindName("TxtChromeExtensionId")
 $txtChromeUpdateUrl = $window.FindName("TxtChromeUpdateUrl")
 $txtChromeValidation = $window.FindName("TxtChromeValidation")
@@ -223,6 +231,7 @@ $script:PreflightPassed = $false
 $script:ChromeConfigValid = $false
 $script:ChromeConfigWarning = $null
 $script:ReleaseConfigPath = Join-Path $deployRoot "release.config.json"
+$script:ChromeSettingsLocked = $true
 
 $txtSubtitle.Text = "Deploy root: $deployRoot"
 $txtFooterLeft.Text = "Run mode: Local workstation, Administrator"
@@ -260,10 +269,32 @@ function Set-ButtonsEnabled {
         $btnInstallChrome.IsEnabled = $false
         $btnRemoveChrome.IsEnabled = $false
         $btnSaveChromeSettings.IsEnabled = $false
+        $btnEditChromeSettings.IsEnabled = $false
         return
     }
 
     Refresh-ActionButtons
+}
+
+function Set-ChromeSettingsLock {
+    param(
+        [bool]$Locked
+    )
+
+    $script:ChromeSettingsLocked = $Locked
+    $txtChromeExtensionId.IsReadOnly = $Locked
+    $txtChromeUpdateUrl.IsReadOnly = $Locked
+
+    if ($Locked) {
+        $txtChromeExtensionId.Background = "#f3f4f6"
+        $txtChromeUpdateUrl.Background = "#f3f4f6"
+        $btnEditChromeSettings.Content = "Edit Chrome Settings"
+    }
+    else {
+        $txtChromeExtensionId.Background = "White"
+        $txtChromeUpdateUrl.Background = "White"
+        $btnEditChromeSettings.Content = "Cancel Edit"
+    }
 }
 
 function Get-IsDomainJoined {
@@ -324,8 +355,8 @@ function Validate-ChromeInputs {
     $isWebStore = $url -like "https://clients2.google.com/*"
     $isDomainJoined = Get-IsDomainJoined
     if (-not $isWebStore -and -not $isDomainJoined) {
-        $script:ChromeConfigValid = $false
-        $script:ChromeConfigWarning = "Off-store URL on non-domain machine is blocked. Use Chrome Web Store update URL or domain-join this PC."
+        $script:ChromeConfigValid = $true
+        $script:ChromeConfigWarning = "Off-store URL on non-domain machine may be blocked by Chrome. You can still install policy, but Chrome may ignore force-install unless the PC is managed."
         return
     }
 
@@ -336,6 +367,9 @@ function Validate-ChromeInputs {
 function Update-ChromeValidationUi {
     if ($script:ChromeConfigValid) {
         $txtChromeValidation.Foreground = "#059669"
+    }
+    elseif ($script:ChromeConfigWarning -like "Off-store URL on non-domain machine*") {
+        $txtChromeValidation.Foreground = "#b45309"
     }
     else {
         $txtChromeValidation.Foreground = "#b91c1c"
@@ -349,7 +383,8 @@ function Refresh-ActionButtons {
     }
     $btnPreflight.IsEnabled = $true
     $btnOpenLogs.IsEnabled = $true
-    $btnSaveChromeSettings.IsEnabled = $true
+    $btnEditChromeSettings.IsEnabled = $true
+    $btnSaveChromeSettings.IsEnabled = -not $script:ChromeSettingsLocked
 
     $btnInstallFx.IsEnabled = $script:PreflightPassed
     $btnRemoveFx.IsEnabled = $script:PreflightPassed
@@ -372,6 +407,7 @@ function Load-ChromeSettingsFromConfig {
     }
 
     Validate-ChromeInputs
+    Set-ChromeSettingsLock -Locked $true
     Refresh-ActionButtons
 }
 
@@ -392,6 +428,7 @@ function Save-ChromeSettingsToConfig {
         Set-Content -Path $script:ReleaseConfigPath -Value $json -Encoding UTF8
 
         Validate-ChromeInputs
+        Set-ChromeSettingsLock -Locked $true
         Refresh-ActionButtons
         Write-UiLog "Saved Chrome settings to release.config.json."
         $txtStatus.Text = "Chrome settings saved."
@@ -652,9 +689,11 @@ function Start-ScriptAction {
                 foreach ($o in $outputs) {
                     if (-not $o) { continue }
                     if ($o.Stream -eq "OUT") {
+                        if ([string]::IsNullOrWhiteSpace([string]$o.Line)) { continue }
                         Write-UiLog $o.Line
                     }
                     elseif ($o.Stream -eq "ERR") {
+                        if ([string]::IsNullOrWhiteSpace([string]$o.Line)) { continue }
                         Write-UiLog ("ERROR: " + $o.Line)
                     }
                     elseif ($o.Stream -eq "EXIT") {
@@ -701,6 +740,20 @@ $btnSaveChromeSettings.Add_Click({
         Save-ChromeSettingsToConfig
     })
 
+$btnEditChromeSettings.Add_Click({
+        if ($script:ChromeSettingsLocked) {
+            Set-ChromeSettingsLock -Locked $false
+            $txtStatus.Text = "Chrome settings unlocked for editing."
+            Write-UiLog "Chrome settings unlocked for editing."
+        }
+        else {
+            Load-ChromeSettingsFromConfig
+            $txtStatus.Text = "Chrome settings reverted to saved values."
+            Write-UiLog "Chrome settings edit canceled; reverted to saved config."
+        }
+        Refresh-ActionButtons
+    })
+
 $btnInstallChrome.Add_Click({
         Validate-ChromeInputs
         if (-not $script:ChromeConfigValid) {
@@ -733,7 +786,8 @@ $btnInstallFx.IsEnabled = $false
 $btnRemoveFx.IsEnabled = $false
 $btnInstallChrome.IsEnabled = $false
 $btnRemoveChrome.IsEnabled = $true
-$btnSaveChromeSettings.IsEnabled = $true
+$btnSaveChromeSettings.IsEnabled = $false
+$btnEditChromeSettings.IsEnabled = $true
 
 Write-UiLog "Installer started."
 Write-UiLog "Detected deploy root: $deployRoot"

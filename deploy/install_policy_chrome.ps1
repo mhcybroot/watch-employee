@@ -34,11 +34,11 @@ if (-not $UpdateUrl) {
 $isDomainJoined = (Get-CimInstance Win32_ComputerSystem).PartOfDomain
 $isWebStoreUrl = $UpdateUrl -like "https://clients2.google.com/*"
 if (-not $isDomainJoined -and -not $isWebStoreUrl) {
-    throw @"
+    Write-Warning @"
 This endpoint is not domain-joined and is using an off-store update URL:
   $UpdateUrl
 
-Chrome can reject off-store force-install on unmanaged endpoints.
+Chrome may reject off-store force-install on unmanaged endpoints.
 Fallback: publish the extension to Chrome Web Store private listing and
 set update URL to https://clients2.google.com/service/update2/crx.
 "@

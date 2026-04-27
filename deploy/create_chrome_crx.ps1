@@ -1,7 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$PrivateKeyPath,
-    [Parameter(Mandatory = $true)]
     [string]$CrxBaseUrl,
     [string]$ChromeExePath
 )
@@ -59,7 +58,28 @@ if (-not $extensionId -or $extensionId -eq "REPLACE_WITH_CHROME_EXTENSION_ID") {
     throw "release.config.json chrome.extensionId must be set before generating update metadata."
 }
 
-$cleanBase = $CrxBaseUrl.TrimEnd("/")
+$resolvedCrxBaseUrl = $CrxBaseUrl
+if (-not $resolvedCrxBaseUrl) {
+    $updateUrl = $release.chrome.updateUrl
+    if (-not $updateUrl) {
+        throw "CrxBaseUrl not provided and release.config.json chrome.updateUrl is missing."
+    }
+
+    $updateUri = $null
+    if (-not [System.Uri]::TryCreate($updateUrl, [System.UriKind]::Absolute, [ref]$updateUri)) {
+        throw "release.config.json chrome.updateUrl is not a valid absolute URL: $updateUrl"
+    }
+
+    $updateDirPath = [System.IO.Path]::GetDirectoryName($updateUri.AbsolutePath)
+    if (-not $updateDirPath) {
+        throw "Could not derive CRX base URL from chrome.updateUrl: $updateUrl"
+    }
+
+    $resolvedCrxBaseUrl = "$($updateUri.Scheme)://$($updateUri.Authority)$($updateDirPath.Replace('\','/'))"
+    Write-Host "CrxBaseUrl not provided. Derived from chrome.updateUrl: $resolvedCrxBaseUrl"
+}
+
+$cleanBase = $resolvedCrxBaseUrl.TrimEnd("/")
 $crxUrl = "$cleanBase/watch-employee-chrome-v$version.crx"
 $updateXmlPath = Join-Path $artifactsDir "updates.xml"
 
