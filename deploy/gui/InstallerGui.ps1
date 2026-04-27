@@ -144,9 +144,15 @@ $xaml = @"
                 <StackPanel>
                     <TextBlock Text="Status" FontWeight="Bold" FontSize="16"/>
                     <TextBlock x:Name="TxtStatus" Margin="0,8,0,10" Foreground="#374151" TextWrapping="Wrap"/>
-                    <TextBlock Text="Chrome (Phase 1: Disabled)" FontWeight="Bold" Margin="0,10,0,8"/>
-                    <Button x:Name="BtnInstallChrome" Margin="0,0,0,8" Padding="10" IsEnabled="False" ToolTip="Enable after extension ID/update URL finalized." Content="Install Chrome Policy (Coming Next)"/>
-                    <Button x:Name="BtnRemoveChrome" Padding="10" IsEnabled="False" ToolTip="Enable after extension ID/update URL finalized." Content="Remove Chrome Policy (Coming Next)"/>
+                    <TextBlock Text="Chrome Settings" FontWeight="Bold" Margin="0,10,0,8"/>
+                    <TextBlock Text="Extension ID" FontSize="12" Foreground="#374151"/>
+                    <TextBox x:Name="TxtChromeExtensionId" Margin="0,4,0,8" Padding="8"/>
+                    <TextBlock Text="Update URL" FontSize="12" Foreground="#374151"/>
+                    <TextBox x:Name="TxtChromeUpdateUrl" Margin="0,4,0,8" Padding="8"/>
+                    <Button x:Name="BtnSaveChromeSettings" Margin="0,0,0,8" Padding="10" Content="Save Chrome Settings"/>
+                    <TextBlock x:Name="TxtChromeValidation" Margin="0,0,0,8" Foreground="#6b7280" TextWrapping="Wrap"/>
+                    <Button x:Name="BtnInstallChrome" Margin="0,0,0,8" Padding="10" Background="#059669" Foreground="White" Content="Install Chrome Policy"/>
+                    <Button x:Name="BtnRemoveChrome" Padding="10" Background="#b45309" Foreground="White" Content="Remove Chrome Policy"/>
                     <Separator Margin="0,12,0,12"/>
                     <TextBlock Text="Current Action Log File" FontWeight="Bold"/>
                     <TextBlock x:Name="TxtLogFile" Margin="0,6,0,0" Foreground="#6b7280" TextWrapping="Wrap"/>
@@ -200,6 +206,12 @@ $btnPreflight = $window.FindName("BtnPreflight")
 $btnInstallFx = $window.FindName("BtnInstallFx")
 $btnRemoveFx = $window.FindName("BtnRemoveFx")
 $btnOpenLogs = $window.FindName("BtnOpenLogs")
+$btnInstallChrome = $window.FindName("BtnInstallChrome")
+$btnRemoveChrome = $window.FindName("BtnRemoveChrome")
+$btnSaveChromeSettings = $window.FindName("BtnSaveChromeSettings")
+$txtChromeExtensionId = $window.FindName("TxtChromeExtensionId")
+$txtChromeUpdateUrl = $window.FindName("TxtChromeUpdateUrl")
+$txtChromeValidation = $window.FindName("TxtChromeValidation")
 
 $script:ActionRunning = $false
 $script:CurrentLogFile = $null
@@ -207,6 +219,10 @@ $script:CurrentActionJob = $null
 $script:CurrentActionJobId = $null
 $script:ActionTimer = $null
 $script:CurrentActionName = $null
+$script:PreflightPassed = $false
+$script:ChromeConfigValid = $false
+$script:ChromeConfigWarning = $null
+$script:ReleaseConfigPath = Join-Path $deployRoot "release.config.json"
 
 $txtSubtitle.Text = "Deploy root: $deployRoot"
 $txtFooterLeft.Text = "Run mode: Local workstation, Administrator"
@@ -236,10 +252,158 @@ function Set-ButtonsEnabled {
     param(
         [bool]$Enabled
     )
-    $btnPreflight.IsEnabled = $Enabled
-    $btnInstallFx.IsEnabled = $Enabled
-    $btnRemoveFx.IsEnabled = $Enabled
-    $btnOpenLogs.IsEnabled = $Enabled
+    if (-not $Enabled) {
+        $btnPreflight.IsEnabled = $false
+        $btnInstallFx.IsEnabled = $false
+        $btnRemoveFx.IsEnabled = $false
+        $btnOpenLogs.IsEnabled = $false
+        $btnInstallChrome.IsEnabled = $false
+        $btnRemoveChrome.IsEnabled = $false
+        $btnSaveChromeSettings.IsEnabled = $false
+        return
+    }
+
+    Refresh-ActionButtons
+}
+
+function Get-IsDomainJoined {
+    try {
+        return (Get-CimInstance Win32_ComputerSystem).PartOfDomain
+    }
+    catch {
+        return $false
+    }
+}
+
+function Read-ReleaseConfig {
+    if (-not (Test-Path $script:ReleaseConfigPath)) {
+        return $null
+    }
+    try {
+        return Get-Content $script:ReleaseConfigPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-UiLog "ERROR: Failed to parse release config: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Validate-ChromeInputs {
+    $id = ($txtChromeExtensionId.Text | ForEach-Object { $_.Trim() })
+    $url = ($txtChromeUpdateUrl.Text | ForEach-Object { $_.Trim() })
+
+    if (-not $id) {
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Chrome Extension ID is required."
+        return
+    }
+    if ($id -notmatch '^[a-z]{32}$') {
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Extension ID must be exactly 32 lowercase letters."
+        return
+    }
+
+    if (-not $url) {
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Chrome Update URL is required."
+        return
+    }
+
+    $uri = $null
+    if (-not [System.Uri]::TryCreate($url, [System.UriKind]::Absolute, [ref]$uri)) {
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Update URL must be a valid absolute URL."
+        return
+    }
+    if ($uri.Scheme -ne "https") {
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Update URL must use https."
+        return
+    }
+
+    $isWebStore = $url -like "https://clients2.google.com/*"
+    $isDomainJoined = Get-IsDomainJoined
+    if (-not $isWebStore -and -not $isDomainJoined) {
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Off-store URL on non-domain machine is blocked. Use Chrome Web Store update URL or domain-join this PC."
+        return
+    }
+
+    $script:ChromeConfigValid = $true
+    $script:ChromeConfigWarning = "Chrome settings look valid."
+}
+
+function Update-ChromeValidationUi {
+    if ($script:ChromeConfigValid) {
+        $txtChromeValidation.Foreground = "#059669"
+    }
+    else {
+        $txtChromeValidation.Foreground = "#b91c1c"
+    }
+    $txtChromeValidation.Text = $script:ChromeConfigWarning
+}
+
+function Refresh-ActionButtons {
+    if ($script:ActionRunning) {
+        return
+    }
+    $btnPreflight.IsEnabled = $true
+    $btnOpenLogs.IsEnabled = $true
+    $btnSaveChromeSettings.IsEnabled = $true
+
+    $btnInstallFx.IsEnabled = $script:PreflightPassed
+    $btnRemoveFx.IsEnabled = $script:PreflightPassed
+
+    $btnInstallChrome.IsEnabled = $script:ChromeConfigValid
+    $btnRemoveChrome.IsEnabled = $true
+
+    Update-ChromeValidationUi
+}
+
+function Load-ChromeSettingsFromConfig {
+    $release = Read-ReleaseConfig
+    if (-not $release) {
+        $txtChromeExtensionId.Text = ""
+        $txtChromeUpdateUrl.Text = ""
+    }
+    else {
+        $txtChromeExtensionId.Text = if ($release.chrome.extensionId) { [string]$release.chrome.extensionId } else { "" }
+        $txtChromeUpdateUrl.Text = if ($release.chrome.updateUrl) { [string]$release.chrome.updateUrl } else { "" }
+    }
+
+    Validate-ChromeInputs
+    Refresh-ActionButtons
+}
+
+function Save-ChromeSettingsToConfig {
+    try {
+        $release = Read-ReleaseConfig
+        if (-not $release) {
+            throw "release.config.json is missing or invalid."
+        }
+        if (-not $release.chrome) {
+            $release | Add-Member -MemberType NoteProperty -Name chrome -Value ([pscustomobject]@{}) -Force
+        }
+
+        $release.chrome.extensionId = $txtChromeExtensionId.Text.Trim()
+        $release.chrome.updateUrl = $txtChromeUpdateUrl.Text.Trim()
+
+        $json = $release | ConvertTo-Json -Depth 50
+        Set-Content -Path $script:ReleaseConfigPath -Value $json -Encoding UTF8
+
+        Validate-ChromeInputs
+        Refresh-ActionButtons
+        Write-UiLog "Saved Chrome settings to release.config.json."
+        $txtStatus.Text = "Chrome settings saved."
+    }
+    catch {
+        Validate-ChromeInputs
+        $script:ChromeConfigValid = $false
+        $script:ChromeConfigWarning = "Failed to save Chrome settings: $($_.Exception.Message)"
+        Refresh-ActionButtons
+        Write-UiLog "ERROR: Failed to save Chrome settings: $($_.Exception.Message)"
+        $txtStatus.Text = "Save failed. Check log."
+    }
 }
 
 function Complete-CurrentAction {
@@ -372,19 +536,15 @@ function Invoke-PreflightCheck {
     }
 
     if ($errors.Count -eq 0) {
-        $window.Dispatcher.Invoke([Action]{
-                $txtStatus.Text = "Preflight passed. Install/Remove actions are ready."
-                $btnInstallFx.IsEnabled = $true
-                $btnRemoveFx.IsEnabled = $true
-            })
+        $script:PreflightPassed = $true
+        $window.Dispatcher.Invoke([Action]{ $txtStatus.Text = "Preflight passed. Install/Remove actions are ready." })
+        Refresh-ActionButtons
         return $true
     }
     else {
-        $window.Dispatcher.Invoke([Action]{
-                $txtStatus.Text = "Preflight failed. Fix errors before install/remove."
-                $btnInstallFx.IsEnabled = $false
-                $btnRemoveFx.IsEnabled = $false
-            })
+        $script:PreflightPassed = $false
+        $window.Dispatcher.Invoke([Action]{ $txtStatus.Text = "Preflight failed. Fix errors before install/remove." })
+        Refresh-ActionButtons
         return $false
     }
 }
@@ -537,11 +697,47 @@ $btnOpenLogs.Add_Click({
         Start-Process -FilePath "explorer.exe" -ArgumentList "`"$logsDir`""
     })
 
+$btnSaveChromeSettings.Add_Click({
+        Save-ChromeSettingsToConfig
+    })
+
+$btnInstallChrome.Add_Click({
+        Validate-ChromeInputs
+        if (-not $script:ChromeConfigValid) {
+            Refresh-ActionButtons
+            Write-UiLog "ERROR: Chrome settings are invalid; install blocked."
+            return
+        }
+
+        $scriptPath = Join-Path $deployRoot "install_policy_chrome.ps1"
+        $args = @("-ExtensionId", $txtChromeExtensionId.Text.Trim(), "-UpdateUrl", $txtChromeUpdateUrl.Text.Trim())
+        Start-ScriptAction -ActionName "install-chrome-policy" -ScriptPath $scriptPath -ScriptArguments $args
+    })
+
+$btnRemoveChrome.Add_Click({
+        $scriptPath = Join-Path $deployRoot "remove_policy_chrome.ps1"
+        Start-ScriptAction -ActionName "remove-chrome-policy" -ScriptPath $scriptPath
+    })
+
+$txtChromeExtensionId.Add_TextChanged({
+        Validate-ChromeInputs
+        Refresh-ActionButtons
+    })
+
+$txtChromeUpdateUrl.Add_TextChanged({
+        Validate-ChromeInputs
+        Refresh-ActionButtons
+    })
+
 $btnInstallFx.IsEnabled = $false
 $btnRemoveFx.IsEnabled = $false
+$btnInstallChrome.IsEnabled = $false
+$btnRemoveChrome.IsEnabled = $true
+$btnSaveChromeSettings.IsEnabled = $true
 
 Write-UiLog "Installer started."
 Write-UiLog "Detected deploy root: $deployRoot"
+Load-ChromeSettingsFromConfig
 $null = Invoke-PreflightCheck
 
 $window.ShowDialog() | Out-Null

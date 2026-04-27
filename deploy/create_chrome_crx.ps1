@@ -1,5 +1,3 @@
-$ErrorActionPreference = "Stop"
-
 param(
     [Parameter(Mandatory = $true)]
     [string]$PrivateKeyPath,
@@ -7,6 +5,8 @@ param(
     [string]$CrxBaseUrl,
     [string]$ChromeExePath
 )
+
+$ErrorActionPreference = "Stop"
 
 $baseDir = $PSScriptRoot
 $repoRoot = Resolve-Path (Join-Path $baseDir "..")

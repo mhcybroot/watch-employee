@@ -24,7 +24,14 @@ Run:
 
 `deploy\artifacts\gui\WatchEmployee-Installer.exe`
 
-The GUI will auto-elevate, run preflight checks, and provide one-click Firefox policy install/remove with timestamped logs in `deploy\logs`.
+The GUI will auto-elevate, run preflight checks, and provide one-click Firefox + Chrome policy actions with timestamped logs in `deploy\logs`.
+
+Chrome GUI workflow:
+1. Enter `Chrome Extension ID` (32 lowercase letters).
+2. Enter `Chrome Update URL` (`https://...`).
+3. Click `Save Chrome Settings`.
+4. Click `Install Chrome Policy`.
+5. Verify in `chrome://policy`, then restart Chrome.
 
 ## 2) Validation Gate
 Run:
@@ -58,6 +65,19 @@ Chrome signed CRX + update metadata:
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy\create_chrome_crx.ps1 -PrivateKeyPath <path-to-key.pem> -CrxBaseUrl <public-base-url-containing-crx>
 ```
+
+Publish Chrome update assets into Spring Boot static hosting path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\publish_chrome_update_assets.ps1
+```
+
+This copies:
+- `deploy/artifacts/chrome/updates.xml`
+- latest `deploy/artifacts/chrome/watch-employee-chrome-v*.crx`
+
+to:
+- `src/main/resources/static/extensions/chrome/`
 
 ## 4) Enforce Admin-Controlled Install/Uninstall
 Firefox force-install/lock (admin only):
