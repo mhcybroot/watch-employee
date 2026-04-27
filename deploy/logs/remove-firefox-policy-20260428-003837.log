@@ -1,0 +1,9 @@
+[2026-04-28 00:38:37] Starting remove-firefox-policy...
+[2026-04-28 00:38:37] Script: C:\Users\HP\Desktop\Project\watch-employee\deploy\remove_policy.ps1
+[2026-04-28 00:38:37] Step 1/2: Removing Firefox enterprise policy...
+[2026-04-28 00:38:38] ExtensionSettings property removed.
+[2026-04-28 00:38:38] Developer Tools restriction removed.
+[2026-04-28 00:38:38] Step 2/2: Cleaning Firefox package files...
+[2026-04-28 00:38:38] Firefox installation directory removed.
+[2026-04-28 00:38:38] Cleanup complete. Restart Firefox to apply policy changes.
+[2026-04-28 00:38:38] ERROR: Action monitor crashed: Cannot bind argument to parameter 'ActionName' because it is an empty string.

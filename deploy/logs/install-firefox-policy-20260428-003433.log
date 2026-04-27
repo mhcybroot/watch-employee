@@ -1,0 +1,10 @@
+[2026-04-28 00:34:33] Starting install-firefox-policy...
+[2026-04-28 00:34:33] Script: C:\Users\HP\Desktop\Project\watch-employee\deploy\install_policy.ps1
+[2026-04-28 00:34:34] Creating installation directory: C:\ProgramData\WatchEmployee\firefox
+[2026-04-28 00:34:34] Copying extension package...
+[2026-04-28 00:34:34] Applying Registry Policy...
+[2026-04-28 00:34:34] Policy applied successfully!
+[2026-04-28 00:34:34] Please restart Firefox to see the changes.
+[2026-04-28 00:34:34] Installed package: C:\ProgramData\WatchEmployee\firefox\watch-employee-firefox-v1.0.xpi
+[2026-04-28 00:34:34] To remove the policy, run remove_policy.ps1
+[2026-04-28 00:34:34] ERROR: Action monitor crashed: The term 'Complete-Action' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.

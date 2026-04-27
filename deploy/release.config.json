@@ -1,8 +1,8 @@
 {
-  "backendUrl": "http://76.12.221.43:8565",
+  "backendUrl": "http://76.13.221.43:8565",
   "extensionApiKey": "productivity-secret-key-2024",
   "chrome": {
     "extensionId": "REPLACE_WITH_CHROME_EXTENSION_ID",
-    "updateUrl": "https://76.12.221.43/extensions/chrome/updates.xml"
+    "updateUrl": "https://76.13.221.43/extensions/chrome/updates.xml"
   }
 }

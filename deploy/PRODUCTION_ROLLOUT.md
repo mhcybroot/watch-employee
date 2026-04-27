@@ -13,6 +13,19 @@ Run:
 powershell -ExecutionPolicy Bypass -File deploy\sync_extension_config.ps1
 ```
 
+## GUI Option (Recommended for technicians)
+Build installer GUI EXE:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\build_installer_gui.ps1
+```
+
+Run:
+
+`deploy\artifacts\gui\WatchEmployee-Installer.exe`
+
+The GUI will auto-elevate, run preflight checks, and provide one-click Firefox policy install/remove with timestamped logs in `deploy\logs`.
+
 ## 2) Validation Gate
 Run:
 

@@ -1,0 +1,20 @@
+[2026-04-28 00:46:53] Starting remove-firefox-policy...
+[2026-04-28 00:46:53] Script: C:\Users\HP\Desktop\Project\watch-employee\deploy\remove_policy.ps1
+[2026-04-28 00:46:53] Step 1/2: Removing Firefox enterprise policy...
+[2026-04-28 00:46:53] ExtensionSettings property removed.
+[2026-04-28 00:46:54] Developer Tools restriction removed.
+[2026-04-28 00:46:54] Step 2/2: Cleaning Firefox package files...
+[2026-04-28 00:46:54] Firefox installation directory removed.
+[2026-04-28 00:46:54] Cleanup complete. Restart Firefox to apply policy changes.
+[2026-04-28 00:46:54] remove-firefox-policy completed successfully.
+[2026-04-28 00:46:54] Preflight: Firefox package found.
+[2026-04-28 00:46:54] Preflight: Backend connectivity OK (http://76.13.221.43:8565/api/activity/health).
+[2026-04-28 00:47:53] Running preflight check...
+[2026-04-28 00:47:53] Preflight: Firefox package found.
+[2026-04-28 00:47:53] Preflight: Backend connectivity OK (http://76.13.221.43:8565/api/activity/health).
+[2026-04-28 00:47:54] Running preflight check...
+[2026-04-28 00:47:54] Preflight: Firefox package found.
+[2026-04-28 00:47:55] Preflight: Backend connectivity OK (http://76.13.221.43:8565/api/activity/health).
+[2026-04-28 00:47:55] Running preflight check...
+[2026-04-28 00:47:55] Preflight: Firefox package found.
+[2026-04-28 00:47:56] Preflight: Backend connectivity OK (http://76.13.221.43:8565/api/activity/health).

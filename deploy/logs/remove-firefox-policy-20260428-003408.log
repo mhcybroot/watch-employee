@@ -1,0 +1,9 @@
+[2026-04-28 00:34:08] Starting remove-firefox-policy...
+[2026-04-28 00:34:08] Script: C:\Users\HP\Desktop\Project\watch-employee\deploy\remove_policy.ps1
+[2026-04-28 00:34:09] Step 1/2: Removing Firefox enterprise policy...
+[2026-04-28 00:34:09] ExtensionSettings property removed.
+[2026-04-28 00:34:09] Developer Tools restriction removed.
+[2026-04-28 00:34:09] Step 2/2: Cleaning Firefox package files...
+[2026-04-28 00:34:09] Firefox installation directory not found.
+[2026-04-28 00:34:09] Cleanup complete. Restart Firefox to apply policy changes.
+[2026-04-28 00:34:09] ERROR: Action monitor crashed: The term 'Complete-Action' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.

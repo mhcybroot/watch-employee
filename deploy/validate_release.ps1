@@ -38,7 +38,7 @@ Assert-True ($fxManifest.host_permissions -contains $backendWithWildcard) "Firef
 Assert-True ($chManifest.host_permissions -contains $backendWithWildcard) "Chrome host_permissions do not contain $backendWithWildcard"
 Assert-True ($fxManifest.content_security_policy.extension_pages -like "*$connectSrcExpected*") "Firefox CSP connect-src does not contain $connectSrcExpected"
 
-$forbiddenHosts = @("10.10.10.10", "127.0.0.1:8565", "localhost:8565", "76.13.221.43")
+$forbiddenHosts = @("10.10.10.10", "127.0.0.1:8565", "localhost:8565")
 $scanPaths = @(
     (Join-Path $repoRoot "extension"),
     (Join-Path $repoRoot "extension-chrome")

@@ -1,0 +1,12 @@
+[2026-04-28 00:44:55] Starting install-firefox-policy...
+[2026-04-28 00:44:55] Script: C:\Users\HP\Desktop\Project\watch-employee\deploy\install_policy.ps1
+[2026-04-28 00:44:55] Creating installation directory: C:\ProgramData\WatchEmployee\firefox
+[2026-04-28 00:44:55] Copying extension package...
+[2026-04-28 00:44:55] Applying Registry Policy...
+[2026-04-28 00:44:55] Policy applied successfully!
+[2026-04-28 00:44:55] Please restart Firefox to see the changes.
+[2026-04-28 00:44:55] Installed package: C:\ProgramData\WatchEmployee\firefox\watch-employee-firefox-v1.0.xpi
+[2026-04-28 00:44:55] To remove the policy, run remove_policy.ps1
+[2026-04-28 00:44:55] install-firefox-policy completed successfully.
+[2026-04-28 00:44:55] Preflight: Firefox package found.
+[2026-04-28 00:44:56] Preflight: Backend connectivity OK (http://76.13.221.43:8565/api/activity/health).
