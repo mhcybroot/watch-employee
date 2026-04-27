@@ -1,0 +1,14 @@
+[2026-04-28 02:16:34] Starting install-chrome-policy...
+[2026-04-28 02:16:34] Script: C:\Users\HP\Desktop\Project\watch-employee\deploy\install_policy_chrome.ps1
+[2026-04-28 02:16:35] WARNING: This endpoint is not domain-joined and is using an off-store update URL:
+[2026-04-28 02:16:35]   https://watch.skylinkltd.ai/extensions/chrome/updates.xml
+[2026-04-28 02:16:35] Chrome may reject off-store force-install on unmanaged endpoints.
+[2026-04-28 02:16:35] Fallback: publish the extension to Chrome Web Store private listing and
+[2026-04-28 02:16:35] set update URL to https://clients2.google.com/service/update2/crx.
+[2026-04-28 02:16:35] Chrome enterprise policy applied successfully.
+[2026-04-28 02:16:35] Force-installed extension: epgfnhacoaeobfenmjillaimjlcafbba
+[2026-04-28 02:16:35] Update URL: https://watch.skylinkltd.ai/extensions/chrome/updates.xml
+[2026-04-28 02:16:35] Restart Chrome and verify via chrome://policy.
+[2026-04-28 02:16:35] install-chrome-policy completed successfully.
+[2026-04-28 02:16:35] Preflight: Firefox package found.
+[2026-04-28 02:16:35] Preflight: Backend connectivity OK (http://76.13.221.43:8565/api/activity/health).

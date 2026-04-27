@@ -227,6 +227,7 @@ $script:CurrentActionJob = $null
 $script:CurrentActionJobId = $null
 $script:ActionTimer = $null
 $script:CurrentActionName = $null
+$script:CurrentActionLastSeq = 0
 $script:PreflightPassed = $false
 $script:ChromeConfigValid = $false
 $script:ChromeConfigWarning = $null
@@ -620,6 +621,7 @@ function Start-ScriptAction {
     Write-UiLog "Script: $ScriptPath"
 
     $script:LastActionExitCode = $null
+    $script:CurrentActionLastSeq = 0
 
     $script:CurrentActionJob = Start-Job -ArgumentList $ScriptPath, $ScriptArguments -ScriptBlock {
         param($ScriptPathInner, $ScriptArgumentsInner)
@@ -642,27 +644,34 @@ function Start-ScriptAction {
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $psi
         $null = $proc.Start()
+        $seq = 0
 
         while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream -or -not $proc.StandardError.EndOfStream) {
             if (-not $proc.StandardOutput.EndOfStream) {
+                $seq++
                 [pscustomobject]@{
                     Stream = "OUT"
                     Line = $proc.StandardOutput.ReadLine()
+                    Seq = $seq
                 }
             }
             if (-not $proc.StandardError.EndOfStream) {
+                $seq++
                 [pscustomobject]@{
                     Stream = "ERR"
                     Line = $proc.StandardError.ReadLine()
+                    Seq = $seq
                 }
             }
             Start-Sleep -Milliseconds 25
         }
 
         $proc.WaitForExit()
+        $seq++
         [pscustomobject]@{
             Stream = "EXIT"
             Line = $proc.ExitCode
+            Seq = $seq
         }
     }
     $script:CurrentActionJobId = $script:CurrentActionJob.Id
@@ -685,9 +694,13 @@ function Start-ScriptAction {
                     return
                 }
 
-                $outputs = Receive-Job -Id $jobRef.Id
+                $outputs = Receive-Job -Id $jobRef.Id -Keep
                 foreach ($o in $outputs) {
                     if (-not $o) { continue }
+                    if ($o.PSObject.Properties.Match("Seq").Count -gt 0) {
+                        if ([int]$o.Seq -le $script:CurrentActionLastSeq) { continue }
+                        $script:CurrentActionLastSeq = [int]$o.Seq
+                    }
                     if ($o.Stream -eq "OUT") {
                         if ([string]::IsNullOrWhiteSpace([string]$o.Line)) { continue }
                         Write-UiLog $o.Line
