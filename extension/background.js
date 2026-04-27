@@ -131,7 +131,7 @@ browser.idle.onStateChanged.addListener(async (state) => {
     }
 });
 
-const API_KEY = "productivity-secret-key-2024";
+const API_KEY = EXTENSION_API_KEY;
 
 // BLOCKING_API_URL is now defined at the top using SERVER_URL
 let globalBlockedDomains = []; // Cache for fallback check
@@ -262,7 +262,7 @@ async function sendBatchData() {
 
 // ==================== Auto-Fill Message Handlers ====================
 
-const CREDENTIAL_API_KEY = "productivity-secret-key-2024";
+const CREDENTIAL_API_KEY = EXTENSION_API_KEY;
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'check-autofill') {

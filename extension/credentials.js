@@ -1,4 +1,4 @@
-const API_KEY = "productivity-secret-key-2024";
+const API_KEY = EXTENSION_API_KEY;
 let deviceId = null;
 let allCredentials = [];
 let myCredentials = [];

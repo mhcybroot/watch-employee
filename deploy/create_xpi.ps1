@@ -1,10 +1,22 @@
 $ErrorActionPreference = "Stop"
 
 $paramBaseDir = $PSScriptRoot
-$extensionDir = Join-Path $paramBaseDir "..\extension"
-$outputFile = Join-Path $paramBaseDir "watch-employee.xpi"
+$repoRoot = Resolve-Path (Join-Path $paramBaseDir "..")
+$syncScript = Join-Path $paramBaseDir "sync_extension_config.ps1"
+& $syncScript
 
-Write-Host "Packaging extension from $extensionDir to $outputFile..."
+$extensionDir = Join-Path $paramBaseDir "..\extension"
+$manifestPath = Join-Path $extensionDir "manifest.json"
+$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+$version = $manifest.version
+
+$artifactDir = Join-Path $paramBaseDir "artifacts\firefox"
+New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+
+$versionedOutput = Join-Path $artifactDir "watch-employee-firefox-v$version.xpi"
+$compatOutput = Join-Path $paramBaseDir "watch-employee.xpi"
+
+Write-Host "Packaging Firefox extension v$version from $extensionDir..."
 
 $tempZip = Join-Path $paramBaseDir "watch-employee.zip"
 
@@ -17,6 +29,11 @@ if (Test-Path $tempZip) {
 Compress-Archive -Path "$extensionDir\*" -DestinationPath $tempZip -Force
 
 # Rename to .xpi
-Move-Item -Path $tempZip -Destination $outputFile -Force
+if (Test-Path $versionedOutput) {
+    Remove-Item $versionedOutput -Force
+}
+Move-Item -Path $tempZip -Destination $versionedOutput -Force
+Copy-Item -Path $versionedOutput -Destination $compatOutput -Force
 
-Write-Host "Success! XPI created at $outputFile"
+Write-Host "Success! Versioned XPI: $versionedOutput"
+Write-Host "Compatibility copy: $compatOutput"

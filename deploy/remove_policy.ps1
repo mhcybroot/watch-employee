@@ -1,21 +1,18 @@
 $ErrorActionPreference = "Stop"
 
 # Check for Administrator privileges
-if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {  
-    Write-Warning "You do not have Administrator rights to run this script!`nPlease re-run this script as an Administrator!"   
-    Break   
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    throw "Administrator rights are required. Re-run this script as Administrator."
 }
 
-$extensionId = "it@skylink-ltd.com"
-$regPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox\ExtensionSettings"
 $policyPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox"
-$installDir = "C:\ProgramData\WatchEmployee"
+$legacyRegPath = "HKLM:\SOFTWARE\Policies\Mozilla\Firefox\ExtensionSettings"
+$installDir = "C:\ProgramData\WatchEmployee\firefox"
 
-Write-Host "Removing Registry Policy..."
+Write-Host "Step 1/2: Removing Firefox enterprise policy..."
 
 # Remove ExtensionSettings Policy
 try {
-    # 1. Try to remove the Property (New method)
     Remove-ItemProperty -Path $policyPath -Name "ExtensionSettings" -ErrorAction SilentlyContinue
     Write-Host "ExtensionSettings property removed."
 }
@@ -24,9 +21,8 @@ catch {
 }
 
 try {
-    # 2. Try to remove the Subkey (Old method/Cleanup)
-    if (Test-Path $regPath) {
-        Remove-Item -Path $regPath -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path $legacyRegPath) {
+        Remove-Item -Path $legacyRegPath -Recurse -Force -ErrorAction SilentlyContinue
         Write-Host "Legacy ExtensionSettings key removed."
     }
 }
@@ -43,11 +39,14 @@ catch {
     Write-Host "Developer Tools restriction not found."
 }
 
-# Cleanup Files
-Write-Host "Cleaning up files..."
+# Cleanup Files (after policy removal)
+Write-Host "Step 2/2: Cleaning Firefox package files..."
 if (Test-Path $installDir) {
     Remove-Item -Path $installDir -Recurse -Force
-    Write-Host "Installation directory removed."
+    Write-Host "Firefox installation directory removed."
+}
+else {
+    Write-Host "Firefox installation directory not found."
 }
 
-Write-Host "Cleanup complete. Restart Firefox to revert changes."
+Write-Host "Cleanup complete. Restart Firefox to apply policy changes."

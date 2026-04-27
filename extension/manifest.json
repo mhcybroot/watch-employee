@@ -1,52 +1,51 @@
-{
-  "manifest_version": 3,
-  "name": "NEXUS Netro",
-  "version": "1.0",
-  "description": "NEXUS Netro",
-  "permissions": [
-    "tabs",
-    "idle",
-    "storage",
-    "declarativeNetRequest",
-    "alarms",
-    "clipboardWrite"
-  ],
-  "host_permissions": [
-    "http://localhost:8565/*",
-    "http://10.10.10.10:8565/*"
-  ],
-  "background": {
-    "scripts": [
-      "config.js",
-      "background.js"
-    ]
-  },
-  "action": {
-    "default_popup": "credentials.html",
-    "default_title": "My Credentials"
-  },
-  "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://10.10.10.10:8565/ http://localhost:8565/"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "config.js",
-        "autofill.js"
-      ],
-      "css": [
-        "autofill.css"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "it@skylink-ltd.com",
-      "strict_min_version": "109.0"
-    }
-  }
+﻿{
+    "manifest_version":  3,
+    "name":  "NEXUS Netro",
+    "version":  "1.0",
+    "description":  "NEXUS Netro",
+    "permissions":  [
+                        "tabs",
+                        "idle",
+                        "storage",
+                        "declarativeNetRequest",
+                        "alarms",
+                        "clipboardWrite"
+                    ],
+    "host_permissions":  [
+                             "http://76.12.221.43:8565/*"
+                         ],
+    "background":  {
+                       "scripts":  [
+                                       "config.js",
+                                       "background.js"
+                                   ]
+                   },
+    "action":  {
+                   "default_popup":  "credentials.html",
+                   "default_title":  "My Credentials"
+               },
+    "content_security_policy":  {
+                                    "extension_pages":  "default-src \u0027self\u0027; script-src \u0027self\u0027; style-src \u0027self\u0027 \u0027unsafe-inline\u0027; connect-src \u0027self\u0027 http://76.12.221.43:8565/"
+                                },
+    "content_scripts":  [
+                            {
+                                "matches":  [
+                                                "\u003call_urls\u003e"
+                                            ],
+                                "js":  [
+                                           "config.js",
+                                           "autofill.js"
+                                       ],
+                                "css":  [
+                                            "autofill.css"
+                                        ],
+                                "run_at":  "document_idle"
+                            }
+                        ],
+    "browser_specific_settings":  {
+                                      "gecko":  {
+                                                    "id":  "it@skylink-ltd.com",
+                                                    "strict_min_version":  "109.0"
+                                                }
+                                  }
 }
